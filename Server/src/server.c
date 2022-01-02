@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
         max_clients = 30, activity, x, valread, sd;
-    int max_sd, res_type;
+    int max_sd, res_type, tmp_roomID, tmp_screenID;
     struct sockaddr_in address;
 
     char buffer[1025], res[1025], emptyStr[1025] = {'\0'};
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     Player tmpPlayer;
 
     //a message
-    char *message = "Server connected\n";
+    char *message = "01|";
 
     //initialise all client_socket[] to 0 so not checked
     for (x = 0; x < max_clients; x++) {
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     //type of socket created
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(PORT);
 
     //bind the socket to localhost port 8888
@@ -169,6 +169,7 @@ int main(int argc, char *argv[]) {
 
                 //Echo back the message that came in
                 else {
+                    res_type = 0;
                     buffer[valread] = '\0';
                     //TODO: Received <buffer> from client <sd>, process this <buffer> message.
 
@@ -183,17 +184,30 @@ int main(int argc, char *argv[]) {
                     }
 
                     switch (readCommandCode(buffer)) {
+                        case 0:
+                            res_type = 0;
+                            sprintf(res, "%s", getResRoomList());
+                            tmp_screenID = 2;
+                            break;
+                        case 1:
+                            sprintf(res, "Quit.\n");
+                            break;
                         case 2:
                             strcpy(playerList[k].name, readPlayerName(buffer));
                             playerList[k].roomID = readRoomID(buffer);
                             addPlayer(playerList[k].roomID, &(playerList[k]));
-                            sprintf(res, "Joined room, roomid: %d, playerid: %d, playername: %s\n", playerList[k].roomID, playerList[k].sockfd, playerList[k].name);
+                            //sprintf(res, "Joined room, roomid: %d, playerid: %d, playername: %s\n", playerList[k].roomID, playerList[k].sockfd, playerList[k].name);
+                            strcpy(res, getResRoom(playerList[k].roomID, playerList[k].sockfd));
                             res_type = 1;   //Send the response to all players in room.
+                            tmp_roomID = playerList[k].roomID;
+                            tmp_screenID = 3;
                             break;
                         case 3:
                             tmpPlayer = findPlayer(sd);
                             removePlayer(tmpPlayer.roomID, sd);
                             sprintf(res, "Player removed\n");
+                            res_type = 1;
+                            tmp_roomID = playerList[k].roomID;
                             break;
                         default:
                             break;
@@ -203,7 +217,8 @@ int main(int argc, char *argv[]) {
 
                     //TODO: Send the <res> to client(s) <sd>
                     
-                    send(sd, res, strlen(res), 0);
+                    if (res_type == 1) broadCastRoom(tmp_screenID, tmp_roomID, res);
+                    else send(sd, res, strlen(res), 0);
                     
                     //END
                 }

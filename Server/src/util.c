@@ -1,11 +1,20 @@
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "util.h"
 
 void emptyString(char **string) {
     char result[1025] = {'\0'};
     strcpy(*string, result);
+}
+
+char* addElement(char *currentRes, char *newElement) {
+    char *result = calloc(strlen(currentRes) + strlen(newElement) + 2, sizeof(char)); // +2 for the '|' and null-terminator
+    strcpy(result, currentRes);
+    strcat(result, newElement);
+	strcat(result, "|");
+    return result;
 }
 
 int readCommandCode(char *mes) {

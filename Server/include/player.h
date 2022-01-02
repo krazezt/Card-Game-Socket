@@ -8,7 +8,8 @@ typedef struct {
     int sockfd;
     int role;
     int point;
-    int isFollow;
+    int lose;
 } Player;
 
 Player findPlayer(int);
+char* getResPlayer(int); 
