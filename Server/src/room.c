@@ -69,7 +69,22 @@ void broadCastRoom(int screenID, int roomID, char* mes) {
     }
 }
 
-char* getResRoom(int roomID, int player_sockfd) {
+void sendChatAndNotify(int roomID, char* mes) {
+    char* res = (char*)calloc(1025, sizeof(char));
+    sprintf(res, "%s", mes);
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) {
+                    send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                }
+            }
+        }
+    }
+}
+
+char* getResRoom(int roomID) {
     char* resRoomResult = (char*)calloc(1025, sizeof(char));
 
     for (int i = 0; i < MAX_ROOM; i++) {
@@ -124,4 +139,36 @@ char* getResRoomList() {
     }
 
     return resRoomList;
+}
+
+int setPlayerReady(int roomID, int player_sockfd) {
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j]->sockfd == player_sockfd) {
+                    roomList[i].players[j]->state = 4;
+                    return 1;
+                    break;
+                }
+            }
+            break;
+        };
+    }
+    return 0;
+}
+
+int setPlayerHolding(int roomID, int player_sockfd) {
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j]->sockfd == player_sockfd) {
+                    roomList[i].players[j]->state = 3;
+                    return 1;
+                    break;
+                }
+            }
+            break;
+        };
+    }
+    return 0;
 }

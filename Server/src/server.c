@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 
                     Player newPlayer;
                     newPlayer.sockfd = new_socket;
-                    newPlayer.state = 0;
+                    newPlayer.state = 1;
                     playerList[x] = newPlayer;
 
                     //END: Init new player
@@ -195,9 +195,8 @@ int main(int argc, char *argv[]) {
                         case 2:
                             strcpy(playerList[k].name, readPlayerName(buffer));
                             playerList[k].roomID = readRoomID(buffer);
-                            addPlayer(playerList[k].roomID, &(playerList[k]));
-                            //sprintf(res, "Joined room, roomid: %d, playerid: %d, playername: %s\n", playerList[k].roomID, playerList[k].sockfd, playerList[k].name);
-                            strcpy(res, getResRoom(playerList[k].roomID, playerList[k].sockfd));
+                            addPlayer(playerList[k].roomID, &(playerList[k])); // TODO: Room day`
+                            strcpy(res, getResRoom(playerList[k].roomID));
                             res_type = 1;   //Send the response to all players in room.
                             tmp_roomID = playerList[k].roomID;
                             tmp_screenID = 3;
@@ -209,6 +208,35 @@ int main(int argc, char *argv[]) {
                             res_type = 1;
                             tmp_roomID = playerList[k].roomID;
                             break;
+                        case 4:
+                            strcpy(res, createChatAndNotify(playerList[k].name, readChatContent(buffer)));
+                            res_type = 2;   //Send the response as chat or notify in room.
+                            tmp_roomID = playerList[k].roomID;
+                            break;
+                        case 5:
+                            if (setPlayerReady(playerList[k].roomID, playerList[k].sockfd)) {
+                                strcpy(res, getResRoom(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 3;
+                            } else {
+                                // TODO
+                                strcpy(res, "Error occured\b");
+                                res_type = 0;
+                            }
+                            break;
+                        case 6:
+                            if (setPlayerHolding(playerList[k].roomID, playerList[k].sockfd)) {
+                                strcpy(res, getResRoom(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 3;
+                            } else {
+                                // TODO
+                                strcpy(res, "Error occured\b");
+                                res_type = 0;
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -218,6 +246,7 @@ int main(int argc, char *argv[]) {
                     //TODO: Send the <res> to client(s) <sd>
                     
                     if (res_type == 1) broadCastRoom(tmp_screenID, tmp_roomID, res);
+                    else if (res_type == 2) sendChatAndNotify(tmp_roomID, res);
                     else send(sd, res, strlen(res), 0);
                     
                     //END
