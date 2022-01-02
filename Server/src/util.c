@@ -1,5 +1,6 @@
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "util.h"
 
@@ -8,41 +9,51 @@ void emptyString(char **string) {
     strcpy(*string, result);
 }
 
-int readCommandCode(char *mes) {
-    char code[6] = {'\0'};
-
-    for (int i = 0; i < strlen(mes); i++) {
-        if (mes[i] == '|') break;
-        else code[i] = mes[i];
-    }
-
-    return atoi(code);
-}
-
-int readRoomID(char *mes) {
-    char id[6] = {'\0'};
-    int part = 0, x = 0;;
-
-    for (int i = 0; i < strlen(mes); i++) {
-        if (mes[i] == '|' || mes[i] == '\n' || mes[i] == '\r') part++;
-        else if (part == 1) id[x++] = mes[i];
-        else if (part > 1) break;
-    }
-
-    return atoi(id);
-}
-
-char* readPlayerName(char *mes) {
-    char name[11] = {'\0'}, *result;
-    result = calloc(11, sizeof(char));
+char* readPart(char *mes, int partNumber) {
+    char tmpStr[1025] = {'\0'}, *result;
     int part = 0, x = 0;
 
     for (int i = 0; i < strlen(mes); i++) {
         if (mes[i] == '|' || mes[i] == '\n' || mes[i] == '\r') part++;
-        else if (part == 2) name[x++] = mes[i];
-        else if (part > 2) break;
+        else if (part == partNumber) tmpStr[x++] = mes[i];
+        else if (part > partNumber) break;
     }
 
-    strcpy(result, name);
+    result = calloc(strlen(tmpStr), sizeof(char));
+    strcpy(result, tmpStr);
     return result;
 }
+
+char* addElement(char *currentRes, char *newElement) {
+    char *result = calloc(strlen(currentRes) + strlen(newElement) + 2, sizeof(char)); // +2 for the '|' and null-terminator
+    strcpy(result, currentRes);
+    strcat(result, newElement);
+	strcat(result, "|");
+    return result;
+}
+
+int readCommandCode(char *mes) {
+    char* code = readPart(mes, 0);
+    return atoi(code);
+}
+
+int readRoomID(char *mes) {
+    char* id = readPart(mes, 1); 
+    return atoi(id);
+}
+
+char* readPlayerName(char *mes) {
+    char* name = readPart(mes, 2);
+    return name;
+}
+
+char* readChatContent(char *mes) {
+    return readPart(mes, 1);
+}
+
+char* createChatAndNotify(char* name, char* content) {
+    char *result = calloc(strlen(name) + strlen(content) + 6, sizeof(char));
+    sprintf (result, "00|%s|%s|", name, content);
+
+    return result;
+};
