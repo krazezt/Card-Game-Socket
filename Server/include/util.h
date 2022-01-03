@@ -6,3 +6,4 @@ int readRoomID(char*);
 char* readPlayerName(char*);
 char* readChatContent(char*);
 char* createChatAndNotify(char*, char*);
+char* readPlayerToKick(char*);

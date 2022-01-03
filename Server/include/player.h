@@ -11,6 +11,7 @@ typedef struct {
     int lose;
 } Player;
 
+void initPlayerList();
 Player findPlayer(int);
 char* getResPlayer(int);
 

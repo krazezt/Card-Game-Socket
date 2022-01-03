@@ -51,6 +51,10 @@ char* readChatContent(char *mes) {
     return readPart(mes, 1);
 }
 
+char* readPlayerToKick(char *mes) {
+    return readPart(mes, 1);
+}
+
 char* createChatAndNotify(char* name, char* content) {
     char *result = calloc(strlen(name) + strlen(content) + 6, sizeof(char));
     sprintf (result, "00|%s|%s|", name, content);

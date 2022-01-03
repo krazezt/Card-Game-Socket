@@ -5,8 +5,10 @@
 
 Player playerList[MAX_PLAYER];
 
-void newPlayerConnect(char name[10], int sockfd){
-    
+void initPlayerList(){
+    for (int i = 0; i < MAX_PLAYER; i++) {
+        playerList[i].roomID = -1;
+    }
 }
 
 Player findPlayer(int player_sockfd) {

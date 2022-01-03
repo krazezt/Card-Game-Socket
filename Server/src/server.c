@@ -21,6 +21,7 @@ extern Room roomList[MAX_ROOM];
 
 int main(int argc, char *argv[]) {
     createRoomList();
+    initPlayerList();
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
         max_clients = 30, activity, x, valread, sd;
@@ -134,6 +135,7 @@ int main(int argc, char *argv[]) {
                     Player newPlayer;
                     newPlayer.sockfd = new_socket;
                     newPlayer.state = 1;
+                    newPlayer.roomID = -1;
                     playerList[x] = newPlayer;
 
                     //END: Init new player
@@ -221,7 +223,7 @@ int main(int argc, char *argv[]) {
                                 tmp_screenID = 3;
                             } else {
                                 // TODO
-                                strcpy(res, "Error occured\b");
+                                strcpy(res, "Error occured\n");
                                 res_type = 0;
                             }
                             break;
@@ -233,7 +235,29 @@ int main(int argc, char *argv[]) {
                                 tmp_screenID = 3;
                             } else {
                                 // TODO
-                                strcpy(res, "Error occured\b");
+                                strcpy(res, "Error occured\n");
+                                res_type = 0;
+                            }
+                            break;
+                        case 7:
+                            if (kickPlayer(playerList[k].sockfd, playerList[k].roomID, readPlayerToKick(buffer))){
+                                strcpy(res, getResRoom(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 3;
+                            } else {
+                                sprintf(res, "00|#|You are not the host or nickname doesn't exist.|");
+                                res_type = 0;
+                            }
+                            break;
+                        case 8:
+                            if (promotePlayer(playerList[k].sockfd, playerList[k].roomID, readPlayerToKick(buffer))){
+                                strcpy(res, getResRoom(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 3;
+                            } else {
+                                sprintf(res, "00|#|You are not the host or nickname doesn't exist.|");
                                 res_type = 0;
                             }
                             break;
@@ -244,11 +268,11 @@ int main(int argc, char *argv[]) {
                     //END.
 
                     //TODO: Send the <res> to client(s) <sd>
-                    
+
                     if (res_type == 1) broadCastRoom(tmp_screenID, tmp_roomID, res);
                     else if (res_type == 2) sendChatAndNotify(tmp_roomID, res);
                     else send(sd, res, strlen(res), 0);
-                    
+
                     //END
                 }
             }
