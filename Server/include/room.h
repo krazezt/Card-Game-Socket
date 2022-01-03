@@ -12,13 +12,15 @@ typedef struct {
 } Room;
 
 void createRoomList();
-int addPlayer(int, Player*);
-int removePlayer(int, int);
-void broadCastRoom(int, int, char*);
-char* getResRoom(int);
+int addPlayer(int roomID, Player* playerPtr);
+int removePlayer(int roomID, int player_sockfd);
+void broadCastRoom(int screenID, int roomID, char* mes);
+char* getResRoom(int roomID);
 char* getResRoomList();
-void sendChatAndNotify(int, char*);
-int setPlayerReady(int, int);
-int setPlayerHolding(int, int);
-int kickPlayer(int, int, char*);
-int promotePlayer(int, int, char*);
+void sendChatAndNotify(int roomID, char* mes);
+int setPlayerReady(int roomID, int player_sockfd);
+int setPlayerHolding(int roomID, int player_sockfd);
+int kickPlayer(int curr_player_sd, int roomID, char *playerToKick);
+int promotePlayer(int curr_player_sd, int roomID, char *playerToKick);
+int startGame(int curr_player_sd, int roomID);
+char* getResGame(int roomID);

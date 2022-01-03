@@ -11,6 +11,7 @@
 
 #include "room.h"
 #include "util.h"
+#include "card.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -22,6 +23,7 @@ extern Room roomList[MAX_ROOM];
 int main(int argc, char *argv[]) {
     createRoomList();
     initPlayerList();
+    initRandomSeed();
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
         max_clients = 30, activity, x, valread, sd;
@@ -260,6 +262,23 @@ int main(int argc, char *argv[]) {
                                 sprintf(res, "00|#|You are not the host or nickname doesn't exist.|");
                                 res_type = 0;
                             }
+                            break;
+                        case 9:
+                            if (startGame(playerList[k].sockfd, playerList[k].roomID)) {
+                                strcpy(res, getResGame(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 4;
+                            } else {
+                                sprintf(res, "00|#|You are not the host or someone on holding.|");
+                                res_type = 0;
+                            }
+                            break;
+                        case 10:
+                            
+                            break;
+                        case 11:
+                            
                             break;
                         default:
                             break;
