@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "player.h": "c",
-        "socket.h": "c"
+        "socket.h": "c",
+        "card.h": "c"
     }
 }
