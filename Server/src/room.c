@@ -43,6 +43,8 @@ int removePlayer(int roomID, int player_sockfd) {                           //Xo
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {                  //Tim kiem tat ca nguoi choi hien co trong phong.
                 if (roomList[i].players[j] != NULL)
                     if (roomList[i].players[j]->sockfd == player_sockfd) {  //Tim thay player tuong ung
+                        roomList[i].players[j]->roomID = -1;
+                        roomList[i].players[j]->state = 2;
                         roomList[i].players[j] = NULL;                      //Reset the slot
                         return 1;
                     }
@@ -167,6 +169,50 @@ int setPlayerHolding(int roomID, int player_sockfd) {
                     break;
                 }
             }
+            break;
+        };
+    }
+    return 0;
+}
+
+int kickPlayer(int curr_player_sd, int roomID, char *playerToKick) {
+    char* res = (char*)calloc(1025, sizeof(char));
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] == NULL) return 0;
+                if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
+                    strcpy(res, getResRoomList());
+                    send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                    removePlayer(roomID, roomList[i].players[j]->sockfd);
+                    return 1;
+                    break;
+                }
+            }
+            return 0;
+            break;
+        };
+    }
+    return 0;
+}
+
+int promotePlayer(int curr_player_sd, int roomID, char *playerToKick) {
+    char* res = (char*)calloc(1025, sizeof(char));
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] == NULL) return 0;
+                if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
+                    roomList[i].host = roomList[i].players[j]->sockfd;
+                    sprintf(res, "00|#|You are the host now!|");
+                    send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                    return 1;
+                    break;
+                }
+            }
+            return 0;
             break;
         };
     }

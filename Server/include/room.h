@@ -20,3 +20,5 @@ char* getResRoomList();
 void sendChatAndNotify(int, char*);
 int setPlayerReady(int, int);
 int setPlayerHolding(int, int);
+int kickPlayer(int, int, char*);
+int promotePlayer(int, int, char*);
