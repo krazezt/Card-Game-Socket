@@ -13,6 +13,8 @@
 #define TRUE 1
 #define FALSE 0
 #define PORT 8888
+#define MAX 1024
+
 
 int isValidIpAddress(char *ipAddress)
 {
@@ -24,9 +26,30 @@ int isValidIpAddress(char *ipAddress)
         return 0;
 }
 
+void * reader(void* var){
+    char buff[MAX];
+    int buff_bytes;
+    int *conv = (int*) var;
+    int client_sock = *conv;
+    while(1){
+        buff_bytes = recv(client_sock, buff, MAX - 1, 0);
+        if (buff_bytes <= 0)
+        {
+            printf("\nError!Cannot receive data from sever!\n");
+            break;
+        }
+        buff[buff_bytes] = '\0';
+        printf("%s\n", buff);
+    }
+}
+
+void messenger(void *var){
+
+}
+
 int main(int argc, char *argv[]){
     struct sockaddr_in address;
-    int opt = TRUE;
+    pthread_t tid;
     int client_sock;
 
     if (argc != 2)
@@ -53,15 +76,17 @@ int main(int argc, char *argv[]){
     address.sin_port = htons(PORT);
     
     //Step 3: Request to connect server
-    if (connect(client_sock, (struct sockaddr *)&address, sizeof(struct sockaddr)) < 0)
+    if (connect(client_sock, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
         printf("\nError!Can not connect to sever! Client exit immediately! ");
         return 0;
     }
+    
     printf("Listener on port %d \n", PORT);
     //Step 4: Communicate with server
+    
     while(TRUE){
-        
+        pthread_create(&tid,NULL,&reader,&client_sock);
     }
     //Step 4: Close socket
     close(client_sock);
