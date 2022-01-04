@@ -6,7 +6,7 @@ typedef struct {
     int cards[3];
     int state;
     int sockfd;
-    int role;
+    int bet;
     int point;
     int lose;
 } Player;

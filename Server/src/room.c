@@ -1,5 +1,6 @@
 #include "room.h"
 #include "util.h"
+#include "card.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -92,6 +93,7 @@ char* getResRoom(int roomID) {
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
                 if (roomList[i].players[j]->sockfd == roomList[i].host) {
                     sprintf(resRoomResult, "%d|", j);
                     break;
@@ -181,14 +183,14 @@ int kickPlayer(int curr_player_sd, int roomID, char *playerToKick) {
         if (roomList[i].id == roomID) {
             if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] == NULL) return 0;
-                if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
-                    strcpy(res, getResRoomList());
-                    send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
-                    removePlayer(roomID, roomList[i].players[j]->sockfd);
-                    return 1;
-                    break;
-                }
+                if (roomList[i].players[j] != NULL)
+                    if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
+                        strcpy(res, getResRoomList());
+                        send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                        removePlayer(roomID, roomList[i].players[j]->sockfd);
+                        return 1;
+                        break;
+                    }
             }
             return 0;
             break;
@@ -203,18 +205,85 @@ int promotePlayer(int curr_player_sd, int roomID, char *playerToKick) {
         if (roomList[i].id == roomID) {
             if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] == NULL) return 0;
-                if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
-                    roomList[i].host = roomList[i].players[j]->sockfd;
-                    sprintf(res, "00|#|You are the host now!|");
-                    send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
-                    return 1;
-                    break;
-                }
+                if (roomList[i].players[j] != NULL)
+                    if (strcmp(playerToKick, roomList[i].players[j]->name) == 0) {
+                        roomList[i].host = roomList[i].players[j]->sockfd;
+                        sprintf(res, "00|#|You are the host now!|");
+                        send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                        return 1;
+                        break;
+                    }
             }
             return 0;
             break;
         };
     }
     return 0;
+}
+
+void initGame(int roomID) {
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) {
+                    roomList[i].players[j]->state = 5;
+                    roomList[i].players[j]->lose = 0;
+                    roomList[i].players[j]->point = 10000;
+                    roomList[i].players[j]->bet = 0;
+
+                    roomList[i].players[j]->cards[0] = -1;
+                    roomList[i].players[j]->cards[1] = -1;
+                    roomList[i].players[j]->cards[2] = -1;
+                }
+            }
+        };
+    }
+}
+
+int startGame(int curr_player_sd, int roomID) {
+    char* res = (char*)calloc(1025, sizeof(char));
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
+                    if(roomList[i].players[j]->state < 4) return 0;
+            }
+            initGame(roomID);
+            return 1;           // Tat ca deu ready
+            break;
+        };
+    }
+    return 0;       // Khong tim thay phong
+}
+
+char* getResGame(int roomID) {
+    char* resGameResult = (char*)calloc(1025, sizeof(char));
+
+    for (int i = 0; i < MAX_ROOM; i++) {        // Get host
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
+                if (roomList[i].players[j]->sockfd == roomList[i].host) {
+                    sprintf(resGameResult, "%d|", j);
+                    break;
+                }
+            }
+            break;
+        };
+    }
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) {
+                    sprintf(resGameResult, "%s%s|%d|%d|%d|", resGameResult, roomList[i].players[j]->name, roomList[i].players[j]->point, roomList[i].players[j]->bet, roomList[i].players[j]->lose);
+                }
+            }
+        }
+    }
+
+    char *tmpResult = malloc(strlen(resGameResult) + 1);
+    strcpy(tmpResult, resGameResult);
+    return tmpResult;
 }
