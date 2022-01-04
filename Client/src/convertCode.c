@@ -1,12 +1,13 @@
-#include <string.h>
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "util.h"
+#include "convertCode.h"
 
-void emptyString(char **string) {
+void emptyString(char *string) {
     char result[1025] = {'\0'};
-    strcpy(*string, result);
+    strcpy(string, result);
 }
 
 char* readPart(char *mes, int partNumber) {
@@ -37,27 +38,4 @@ int readCommandCode(char *mes) {
     return atoi(code);
 }
 
-int readRoomID(char *mes) {
-    char* id = readPart(mes, 1); 
-    return atoi(id);
-}
 
-char* readPlayerName(char *mes) {
-    char* name = readPart(mes, 2);
-    return name;
-}
-
-char* readChatContent(char *mes) {
-    return readPart(mes, 1);
-}
-
-char* readPlayerToKick(char *mes) {
-    return readPart(mes, 1);
-}
-
-char* createChatAndNotify(char* name, char* content) {
-    char *result = calloc(strlen(name) + strlen(content) + 6, sizeof(char));
-    sprintf (result, "00|%s|%s|", name, content);
-
-    return result;
-};

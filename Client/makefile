@@ -1,8 +1,21 @@
+CXX		:= gcc
 
-client: client.c	
-	gcc	-pthread -o client	client.c
+BIN		:= bin
+SRC		:= src
+INCLUDE	:= include
+
+LIBRARIES	:=
+EXECUTABLE	:= client
+
+
+all: $(BIN)/$(EXECUTABLE)
+
+run: clean all
+	clear
+	./$(BIN)/$(EXECUTABLE)
+
+$(BIN)/$(EXECUTABLE): $(SRC)/*.c
+	$(CXX) -g -pthread -I$(INCLUDE) $^ -o $@ $(LIBRARIES)
+
 clean:
-	find . -type f | xargs touch
-	rm -rf $(OBJS)
-
-	
+	-rm $(BIN)/*

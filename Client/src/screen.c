@@ -1,0 +1,69 @@
+#include "screen.h"
+#include "convertCode.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+/*
+typedef struct RoomListInfo{
+    int id;
+    char name[15];
+    int slot;
+    int isPlaying;  
+} RoomList;
+*/
+RoomList* getRoomList(char* buff){
+    RoomList* rooms = (RoomList*)malloc(10*sizeof(RoomList));
+    int x = 1;
+    for(int i =0; i<10;i++){
+        (rooms+i)->id = atoi(readPart(buff, x)); x++;
+        strcpy((rooms+i)->name,readPart(buff, x)); x++;
+        (rooms+i)->slot = atoi(readPart(buff, x)); x++;
+        (rooms+i)->isPlaying = atoi(readPart(buff, x)); x++;
+    }
+    return rooms;
+}
+
+void mainScreen(){
+    printf("+=====================================+\n");
+    printf("|         Welcome to the game         |\n");
+    printf("+=====================================+\n");
+    printf("|1. Room list.                        |\n");
+    printf("|2. Quit.                             |\n");
+    printf("+=====================================+\n");
+    
+};
+
+void roomListScreen(RoomList* rooms){
+    
+    printf("+=========+==================+========+=========+\n");
+    printf("| Room ID |       Host       |  Slot  | Playing |\n");
+    //printf("|  00001  |    ThienNT123    |  5/6   |         |\n");
+    for(int i =0; i<10; i++){
+    	char host[15] = {' '};
+    	strcpy(host, (rooms+i)->name);
+    	for(int j = strlen((rooms+i)->name); j<15;j++)
+    	{host[j] = ' ';}
+    	host[15] = '\0';
+    	char x;
+    	if((rooms+i)->isPlaying == 0) x = ' '; else x = 'x';
+    	printf("|   00%d   |  %s |  %d/6   |    %c    |\n",(rooms+i)->id,host,(rooms+i)->slot,x);
+    }
+    printf("+=========+==================+========+=========+\n");
+    printf("1.Join room\n");
+    printf("2.Quit\n");
+};
+
+void roomScreen(){
+    printf("+=====+==================+==========+======+\n");
+    printf("|     |     Nickname     |  Status  | Host |\n");
+    printf("|     |    ThienNT123    |  Holding |      |\n");
+    printf("+=====+==================+==========+======+\n");
+};
+
+void gameScreen(){
+    printf("+=====+==================+=========+=======+=====+======+\n");
+    printf("|     |     Nickname     |  Point  |  Bet  | Fl? | Host |\n");
+    printf("|     |    ThienNT123    |  8000   | 2000  |     |      |\n");
+    printf("+=====+==================+=========+=======+=====+======+\n");
+};
