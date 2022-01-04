@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 
 Room roomList[MAX_ROOM];
@@ -15,6 +16,21 @@ void createRoomList() {
         roomList[i].pointPool = 0;
         roomList[i].isPlaying = 0;
     }
+}
+
+int countPlayer(int roomID) {
+    int count = 0;
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) count++;
+            }
+            break;
+        };
+    }
+
+    return count;
 }
 
 int addPlayer(int roomID, Player* playerPtr) {                  //Them player vao phong, return 0 neu that bai, 1 neu thanh cong.
@@ -234,6 +250,8 @@ void initGame(int roomID) {
                     roomList[i].players[j]->cards[0] = -1;
                     roomList[i].players[j]->cards[1] = -1;
                     roomList[i].players[j]->cards[2] = -1;
+
+                    roomList[roomID].pointPool += 10000; 
                 }
             }
         };
@@ -286,4 +304,153 @@ char* getResGame(int roomID) {
     char *tmpResult = malloc(strlen(resGameResult) + 1);
     strcpy(tmpResult, resGameResult);
     return tmpResult;
+}
+
+int countPlaying(int roomID) {
+    int count = 0;
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) 
+                    if (roomList[i].players[j]->lose == 0) count++;
+            }
+            break;
+        };
+    }
+
+    return count;
+}
+
+int distributeCardRoom(int curr_player_sd, int roomID) {
+    int roomIndex;
+    char* res = (char*)calloc(1025, sizeof(char));
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            roomIndex = i;
+            if (curr_player_sd != roomList[i].host)
+                return 0;     // Khong phai chu phong
+        };
+    }
+
+    int *cards = distributeCard(countPlaying(roomID)), j = 0;;
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomIndex].players[i] != NULL)
+            if (roomList[roomIndex].players[i]->lose == 0) {
+                // Moi nguoi 3 la bai
+                roomList[roomIndex].players[i]->cards[0] = cards[j*3];
+                roomList[roomIndex].players[i]->cards[1] = cards[j*3 + 1];
+                roomList[roomIndex].players[i]->cards[2] = cards[j*3 + 2];
+                sprintf(res, "00|#|Your cards: %s, %s, %s|", getCardName(roomList[roomIndex].players[i]->cards[0]), getCardName(roomList[roomIndex].players[i]->cards[1]), getCardName(roomList[roomIndex].players[i]->cards[2]));
+                send(roomList[roomIndex].players[i]->sockfd, res, strlen(res), 0);
+                j++;
+            }
+    }
+
+    return 1;
+}
+
+int betPoint(int curr_player_sd, int roomID, int amount) {
+    char* res = (char*)calloc(1025, sizeof(char));
+
+    if (amount < 1000) {
+        sprintf(res, "00|#|Bet point must be at least 1000.|");
+        send(curr_player_sd, res, strlen(res), 0);
+        return 0;
+    }
+
+    for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+        if (roomList[roomID].players[j] != NULL)
+            if (roomList[roomID].players[j]->sockfd == curr_player_sd) {
+                if (roomList[roomID].players[j]->lose == 1) {
+                    sprintf(res, "00|#|You are loser :D|");
+                    send(curr_player_sd, res, strlen(res), 0);
+                    return 0;
+                }
+
+                if (amount > roomList[roomID].players[j]->point) {
+                    sprintf(res, "00|#|Bet point must be less than your total point.|");
+                    send(curr_player_sd, res, strlen(res), 0);
+                    return 0;
+                }
+
+                roomList[roomID].players[j]->bet = amount;
+                roomList[roomID].players[j]->point -= amount;
+                roomList[roomID].players[j]->state = 6;
+                return 1;
+
+                break;
+            }
+    }
+}
+
+int checkAllBetted(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL)
+            if (roomList[roomID].players[i]->lose != 1 && roomList[roomID].players[i]->state != 6) return 0;
+    }
+
+    return 1;
+}
+
+int resetBetValue(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) roomList[roomID].players[i]->bet = 0;
+    }
+}
+
+int getAndResetBetValue(int roomID) {
+    int result= 0;
+
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) {
+            result += roomList[roomID].players[i]->bet;
+            roomList[roomID].players[i]->bet = 0;
+        }
+    }
+
+    return result;
+}
+
+int resetState(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) roomList[roomID].players[i]->state = 5;
+    }
+}
+
+void checkLose(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) 
+            if (roomList[roomID].players[i]->point < 1000) roomList[roomID].players[i]->lose = 1;
+    }
+}
+
+int endGame(int roomID, int winnerIndex) {
+    char* mes = (char*)calloc(1025, sizeof(char));
+
+    sprintf(mes, "00|#|Final winner: %s|", roomList[roomID].players[winnerIndex]->name);
+    sendChatAndNotify(roomID, mes);
+}
+
+int summaryRound(int roomID) {
+    int highestIndex = 0;
+    char* mes = (char*)calloc(1025, sizeof(char));
+
+    for (int i = 1; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL)
+            if (comparePoint(roomList[roomID].players[i]->cards, roomList[roomID].players[highestIndex]->cards) == 1) highestIndex = i;
+    }
+
+    roomList[roomID].players[highestIndex]->point += getAndResetBetValue(roomID);
+    resetState(roomID);
+    checkLose(roomID);
+
+    sprintf(mes, "00|#|Round winner: %s - %s, %s, %s", roomList[roomID].players[highestIndex]->name, getCardName(roomList[roomID].players[highestIndex]->cards[0]), getCardName(roomList[roomID].players[highestIndex]->cards[1]), getCardName(roomList[roomID].players[highestIndex]->cards[2]));
+    sendChatAndNotify(roomID, mes);
+
+    if (roomList[roomID].players[highestIndex]->point > (roomList[roomID].pointPool)/2) {
+        endGame(roomID, highestIndex);
+        return 1;
+    } else return 0;
 }
