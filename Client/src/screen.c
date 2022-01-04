@@ -4,14 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-/*
-typedef struct RoomListInfo{
-    int id;
-    char name[15];
-    int slot;
-    int isPlaying;  
-} RoomList;
-*/
+
 RoomList* getRoomList(char* buff){
     RoomList* rooms = (RoomList*)malloc(10*sizeof(RoomList));
     int x = 1;
@@ -22,6 +15,17 @@ RoomList* getRoomList(char* buff){
         (rooms+i)->isPlaying = atoi(readPart(buff, x)); x++;
     }
     return rooms;
+}
+
+RoomInfo* getPlayerList(char* buff){
+    RoomInfo* players = (RoomInfo*)malloc(6*sizeof(RoomInfo));
+    int part = readPartLeng(buff); part = (part-3)/2;
+    int x = 3;
+    for(int i =0; i<part;i++){
+        strcpy((players+i)->name,readPart(buff, x)); x++;
+        (players+i)->status = atoi(readPart(buff, x)); x++;
+    }
+    return players;
 }
 
 void mainScreen(){
@@ -54,11 +58,38 @@ void roomListScreen(RoomList* rooms){
     printf("2.Quit\n");
 };
 
-void roomScreen(){
+void roomScreen(RoomInfo* players,int host, int you, int part){
     printf("+=====+==================+==========+======+\n");
     printf("|     |     Nickname     |  Status  | Host |\n");
-    printf("|     |    ThienNT123    |  Holding |      |\n");
+    //printf("|     |    ThienNT123    |  Holding |      |\n");
+    
+    for(int i =0; i<part; i++){
+
+    	char person[15] = {' '};
+    	strcpy(person, (players+i)->name);
+    	for(int j = strlen((players+i)->name); j<15;j++)
+    	{person[j] = ' ';}
+    	person[15] = '\0';
+    	if(i == you) printf("| you "); else printf("|     ");
+    	printf("| %s  ",person);
+    	if((players+i)->status == 0) printf("|  Holding "); else printf("|   Ready  ");
+    	if(i == host) printf("|  x   |\n"); else printf("|      |\n");
+    }
+    for(;part<6;part++) printf("|     |   ---            |          |      |\n");
     printf("+=====+==================+==========+======+\n");
+    if(you == host){
+    	printf("1.Switch status\n");
+    	printf("2.Chat\n");
+    	printf("3.Kick player\n");
+    	printf("4.Allow to Host\n");
+    	printf("5.Start game\n");
+    	printf("6.Quit\n");
+    }else{
+    	printf("1.Switch status\n");
+    	printf("2.Chat\n");
+    	printf("3.Quit\n");
+    }
+    
 };
 
 void gameScreen(){

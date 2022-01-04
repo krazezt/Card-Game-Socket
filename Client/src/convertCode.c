@@ -25,6 +25,17 @@ char* readPart(char *mes, int partNumber) {
     return result;
 }
 
+int readPartLeng(char *mes) {
+    char tmpStr[1025] = {'\0'};
+    int part = 0, x = 0;
+
+    for (int i = 0; i < strlen(mes); i++) {
+        if (mes[i] == '|' || mes[i] == '\n' || mes[i] == '\r') part++;
+    }
+
+    return part;
+}
+
 char* addElement(char *currentRes, char *newElement) {
     char *result = calloc(strlen(currentRes) + strlen(newElement) + 2, sizeof(char)); // +2 for the '|' and null-terminator
     strcpy(result, currentRes);
