@@ -16,15 +16,16 @@
 #define TRUE 1
 #define FALSE 0
 #define PORT 8888
-#define MAX 1024
+#define MAX 1025
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond2 = PTHREAD_COND_INITIALIZER;
 
 int ScreenNumber = 1;
 int isHost = 0;
 int status = 0;
+int mesNumber = 0;
+int  currPoint;
+Message mesList[200]; 
 
 int isValidIpAddress(char *ipAddress)
 {
@@ -40,6 +41,7 @@ int isValidIpAddress(char *ipAddress)
 
 void * reader(void* var){
     char buff[MAX];
+    char currScreen[MAX];
     int buff_bytes;
     int *conv = (int*) var;
     int client_sock = *conv;
@@ -51,7 +53,7 @@ void * reader(void* var){
         {
             printf("\nError!Cannot receive data from sever!\n");
             break;
-        }
+        }printf("%s\n",buff);
         commandCode = readCommandCode(buff);
         switch(commandCode){
             case 01:
@@ -59,7 +61,7 @@ void * reader(void* var){
             	ScreenNumber = 1;
             	
             	mainScreen();
-            	
+
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	break;
@@ -68,7 +70,7 @@ void * reader(void* var){
             	pthread_mutex_lock(&mutex1);
                 ScreenNumber = 2;
             	roomListScreen(getRoomList(buff));
-            	
+
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	break;
@@ -76,22 +78,65 @@ void * reader(void* var){
 
                 pthread_mutex_lock(&mutex1);
                 ScreenNumber = 3;
+                strcpy(currScreen,buff);
+                currScreen[buff_bytes]='\0';
+                
+                
                 if(atoi(readPart(buff, 2))==atoi(readPart(buff, 1))) isHost =1; else isHost = 0;
+                
+                //printf screen
                 part = readPartLeng(buff); part = (part-3)/2;
                 
             	roomScreen(getPlayerList(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-            	
+            	printf("enter your choice: ");
+
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	
             	
             	break;
             case 04:
+                pthread_mutex_lock(&mutex1);
                 ScreenNumber = 4;
-            	printf("%s\n",buff);
+                strcpy(currScreen,buff);
+                currScreen[buff_bytes]='\0';
+                
+                currPoint = getPoint(getGameInfo(buff),atoi(readPart(buff, 1)));
+                
+                part = readPartLeng(buff); part = (part-3)/4;
+            	gameScreen(getGameInfo(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
+		printf("enter your choice: ");
+		
+            	pthread_cond_signal(&cond1);
+            	pthread_mutex_unlock(&mutex1);
+            	
             	break;
             case 00:
+                pthread_mutex_lock(&mutex1);
+                Message newMes;
+            	strcpy(newMes.name,readPart(buff, 1));
+		strcpy(newMes.content,readPart(buff, 2));
+		mesList[mesNumber] = newMes;
+		/*
+		if(ScreenNumber == 3){
+                   part = readPartLeng(currScreen); part = (part-3)/2;
                 
+            	    roomScreen(getPlayerList(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
+		}
+		
+		
+		if(ScreenNumber == 4){
+		    part = readPartLeng(currScreen); part = (part-3)/4;
+            	    gameScreen(getGameInfo(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
+		}
+		*/
+		
+		
+            	mesNumber++;
+            	messeges(mesList,mesNumber);
+            	
+            	pthread_cond_signal(&cond1);
+            	pthread_mutex_unlock(&mutex1);
             	
             	break;
             default:
@@ -104,50 +149,50 @@ void * reader(void* var){
 
 
 void * sender(void* var){
-    char buff[MAX-24] = NULL;
+    char buff[MAX];
     int buff_bytes;
     int *conv = (int*) var;
     int client_sock = *conv;
 
-    int roomId, check, choice;
+    int roomId, point, check, choice;
     char* mes;
+    char* mes_type;
     char nickname[15];
 
     while(1){
     	pthread_mutex_lock(&mutex1);
         pthread_cond_wait(&cond1, &mutex1);
+        pthread_mutex_unlock(&mutex1);
+        fflush(stdin);
         switch(ScreenNumber){
             case 1:
             	check = 1;
             	while(check == 1) {
-                mes = "000";
+                mes_type = "000|";
     	        
-                printf("enter your choice: ");
-     
                 scanf("%d",&choice); 
                 if(choice == 1){
                 	check = 0;
-                	send(client_sock, mes, strlen(mes), 0);
+                	send(client_sock, mes_type, strlen(mes_type), 0);
                 	
                 		
                 }else if(choice == 2){
                 	exit(1);
-                }else {printf("Wrong\n");}
+                }else {printf("Wrong number\n");
+                printf("enter your choice: ");}
 		}
-                pthread_mutex_unlock(&mutex1);
+                
                 break;
             case 2:
 		check =1;
 		while(check == 1){
-
-                printf("enter your choice: ");
      
                 scanf("%d",&choice); 
                 	
                 if(choice == 1){
                 	check = 0;
                 	mes = NULL;
-                	mes = calloc(25, sizeof(char));
+                	mes = calloc(MAX, sizeof(char));
                 	fflush(stdin);
                 	do{
                 	printf("enter room id: "); scanf("%d",&roomId); 
@@ -161,20 +206,20 @@ void * sender(void* var){
                 	send(client_sock, mes, strlen(mes), 0);
                 }else if(choice == 2){
                 	check = 0;
-                	mes = "003";
-                	send(client_sock, mes, strlen(mes), 0);
+                	mes_type = "003|";
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+                	free(mes);
                 }else {printf("Wrong number!\n");
+                	printf("enter your choice: ");
                 }
 		}
-                pthread_mutex_unlock(&mutex1);
+                
             	break;
             case 3:
             	check =1;
             	choice =0;
 		while(check == 1){
-		fflush(stdin);
 		
-                printf("enter your choice: ");
      
                 scanf("%d",&choice);
 
@@ -182,29 +227,40 @@ void * sender(void* var){
 
                     	check = 0;
                     	if(status == 0){
-                    	    mes = "005";
+                    	    mes_type = "005|";
                     	    status = 1;
-                    	    send(client_sock, mes, strlen(mes), 0);
+                    	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}else{
-                    	    mes = "006";
+                    	    mes_type = "006|";
                     	    status = 0;
-                    	    send(client_sock, mes, strlen(mes), 0);
+                    	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}
                     	
                  }
                         
                  else if(choice == 2){
                     	check = 0;
+                    	mes = NULL;
+                    	mes = calloc(MAX, sizeof(char));
                     	printf("Enter your message: ");
-                    	fgets(buff,MAX-24,stdin);
-                    	fgets(buff,MAX-24,stdin);
-                    	buff[strlen(buff)-1] = '\0';
+                    	fgets(buff,MAX,stdin);
+                    	
+                    	
+                    	if(buff[0] == '\n'){
+                           fgets(buff,MAX,stdin);
+                    	    
+                    	}
                     	sprintf (mes, "004|%s|", buff);
+                    	mes[strlen(mes)-2] = '|';
+                    	mes[strlen(mes)-1] = '\0';
                     	printf("%s\n",mes);
                     	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
                  }
                  else if(choice ==3){
                  	check = 0;
+                 	mes = NULL;
+                 	mes = calloc(MAX, sizeof(char));
                  	if(isHost == 1){
                     	printf("Who will be kicked: ");
                     	scanf("%s",nickname); 
@@ -212,47 +268,98 @@ void * sender(void* var){
                     	send(client_sock, mes, strlen(mes), 0);
                     	}else{
                     	    check = 0;
-                	    mes = "003";
-                	    send(client_sock, mes, strlen(mes), 0);
+                	    mes_type = "003|";
+                	    send(client_sock, mes_type, strlen(mes_type), 0);
+                	    
 			}
+			free(mes);
                  }
                  else if(choice ==4){
                  	if(isHost == 1){
                  	check = 0;
+                 	mes = NULL;
+                 	mes = calloc(MAX, sizeof(char));
                     	printf("Who will be allowed: ");
                     	scanf("%s",nickname); 
                     	sprintf (mes, "008|%s|", nickname);
                     	send(client_sock, mes, strlen(mes), 0);
                     	}else{
                     	 printf("Wrong number!\n");
+                    	 printf("enter your choice: ");
 			}
+			free(mes);
                  }
                  else if(choice ==5){
                  	check = 0;
                     	if(isHost == 1){
-                    	    mes = "009";
-                    	    send(client_sock, mes, strlen(mes), 0);
+                    	    mes_type = "009|";
+                    	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}else{
                     	 printf("Wrong number!\n");
+                    	 printf("enter your choice: ");
 			}
+			
                  }
                  else if(choice ==6){
                  	if(isHost == 1){
                  	check = 0;
-                	mes = "003";
-                	send(client_sock, mes, strlen(mes), 0);
+                	mes_type = "003|";
+                	send(client_sock, mes_type, strlen(mes_type), 0);
                 	}else{
                     	 printf("Wrong number!\n");
+                    	 printf("enter your choice: ");
 			}
                  }
                  else{
                     	 printf("Wrong number!\n");
+                    	 printf("enter your choice: ");
 			}
                 	
                 }
-            	pthread_mutex_unlock(&mutex1);
+            	
                 break;
             case 4:
+            	check =1;
+		while(check == 1){
+     
+                scanf("%d",&choice); 
+                	
+                if(choice == 1){
+                	check = 0;
+                	mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                    	printf("Enter your message: ");
+                    	if(fgets(buff,MAX,stdin) != NULL);
+                    	fgets(buff,MAX,stdin);
+                    	buff[strlen(buff)-1] = '\0';
+                    	sprintf (mes, "004|%s|", buff);
+                    	
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+                }else if(choice == 2){
+                	check = 0;
+                	mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                	printf("Enter point to bet: "); scanf("%d",&point); 
+                	
+                    	sprintf (mes, "011|%d|", point);
+                    	
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+                }else if(choice == 3){
+                	if(isHost == 1){
+                 	check = 0;
+                	mes_type = "010|";
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+                	}else{
+                    	 printf("Wrong number!\n");
+                    	 printf("enter your choice: ");
+			}
+                }else{printf("Wrong number!\n");
+                	printf("enter your choice: ");
+                }
+		}
+                
             	break;
             default:
             	

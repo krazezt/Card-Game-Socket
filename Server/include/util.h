@@ -7,3 +7,4 @@ char* readPlayerName(char*);
 char* readChatContent(char*);
 char* createChatAndNotify(char*, char*);
 char* readPlayerToKick(char*);
+int readBetAmount(char *mes);

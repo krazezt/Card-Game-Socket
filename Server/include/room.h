@@ -24,3 +24,7 @@ int kickPlayer(int curr_player_sd, int roomID, char *playerToKick);
 int promotePlayer(int curr_player_sd, int roomID, char *playerToKick);
 int startGame(int curr_player_sd, int roomID);
 char* getResGame(int roomID);
+int distributeCardRoom(int curr_player_sd, int roomID);
+int betPoint(int curr_player_sd, int roomID, int amount);
+int checkAllBetted(int roomID);
+int summaryRound(int roomID);

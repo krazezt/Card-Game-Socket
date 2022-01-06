@@ -275,10 +275,25 @@ int main(int argc, char *argv[]) {
                             }
                             break;
                         case 10:
-                            
+                            if (!distributeCardRoom(playerList[k].sockfd, playerList[k].roomID)) {
+                                sprintf(res, "00|#|You are not the host.|");
+                                res_type = 0;
+                            }
                             break;
                         case 11:
-                            
+                            if (betPoint(playerList[k].sockfd, playerList[k].roomID, readBetAmount(buffer))) {
+                                strcpy(res, getResGame(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 4;
+                            }
+                            if (checkAllBetted(playerList[k].roomID)) {
+                                summaryRound(playerList[k].roomID);
+                                strcpy(res, getResGame(playerList[k].roomID));
+                                res_type = 1;
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 4;
+                            }
                             break;
                         default:
                             break;
