@@ -20,6 +20,36 @@
 extern Player playerList[MAX_PLAYER];
 extern Room roomList[MAX_ROOM];
 
+int quitApp(int player_sockfd) {
+    int playerIndex = 0;
+    int result = 0;
+
+    for (int i = 0; i < MAX_PLAYER; i++) {
+        if (playerList[i].sockfd == player_sockfd) {
+            playerIndex = i;
+            break;
+        }
+    }
+
+    if (playerList[playerIndex].state == 3 || playerList[playerIndex].state == 4) {
+        removePlayer2(playerList[playerIndex].roomID, player_sockfd);
+        result = 1;
+    } else if (playerList[playerIndex].state > 4) {
+        removePlayer2(playerList[playerIndex].roomID, player_sockfd);
+        result = 2;
+    }
+
+    playerList[playerIndex].bet = 0;
+    playerList[playerIndex].lose = 0;
+    playerList[playerIndex].point = 0;
+    playerList[playerIndex].roomID = -1;
+    playerList[playerIndex].sockfd = 0;
+    playerList[playerIndex].state = 0;
+    strcpy(playerList[playerIndex].name, "");
+
+    return result;
+}
+
 int main(int argc, char *argv[]) {
     createRoomList();
     initPlayerList();
@@ -27,7 +57,7 @@ int main(int argc, char *argv[]) {
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
         max_clients = 30, activity, x, valread, sd;
-    int max_sd, res_type, tmp_roomID, tmp_screenID, startGameReturn = 0;
+    int max_sd, res_type, tmp_roomID, tmp_screenID, startGameReturn = 0, quitAppReturn = 0;
     struct sockaddr_in address;
 
     char buffer[1025], res[1025], emptyStr[1025] = {'\0'};
@@ -162,7 +192,21 @@ int main(int argc, char *argv[]) {
 
                     //TODO: Player disconnected
 
-                    
+                    tmpPlayer = findPlayer(sd);
+                    quitAppReturn = quitApp(sd);
+                    if (quitAppReturn == 1) {
+                        strcpy(res, getResRoom(tmpPlayer.roomID));
+                        tmp_roomID = tmpPlayer.roomID;
+                        tmp_screenID = 3;
+
+                        broadCastRoom(tmp_screenID, tmp_roomID, res);
+                    } else if (quitAppReturn == 2) {
+                        strcpy(res, getResGame(tmpPlayer.roomID));
+                        tmp_roomID = tmpPlayer.roomID;
+                        tmp_screenID = 4;
+
+                        broadCastRoom(tmp_screenID, tmp_roomID, res);
+                    }
 
                     //END: Player disconnected
 
@@ -228,7 +272,7 @@ int main(int argc, char *argv[]) {
                                 removePlayer(tmpPlayer.roomID, sd);
                                 strcpy(res, getResRoom(tmp_roomID));
                                 res_type = 1;
-                                tmp_screenID = 5;
+                                tmp_screenID = 4;
                             }
                             break;
                         case 4:
@@ -313,7 +357,7 @@ int main(int argc, char *argv[]) {
                             if (checkAllBetted(playerList[k].roomID)) {
                                 tmp_screenID = 4;
                                 if (summaryRound(playerList[k].roomID)) tmp_screenID = 5;
-                                sleep(0.1);
+                                sleep(1);
                                 strcpy(res, getResGame(playerList[k].roomID));
                                 res_type = 1;
                                 tmp_roomID = playerList[k].roomID;

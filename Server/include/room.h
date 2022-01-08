@@ -14,6 +14,7 @@ typedef struct {
 void createRoomList();
 int addPlayer(int roomID, Player* playerPtr);
 int removePlayer(int roomID, int player_sockfd);
+int removePlayer2(int roomID, int player_sockfd);
 void broadCastRoom(int screenID, int roomID, char* mes);
 char* getResRoom(int roomID);
 char* getResRoomList();

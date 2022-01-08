@@ -77,6 +77,39 @@ int removePlayer(int roomID, int player_sockfd) {                           //Xo
     return 0;                                                               //Khong tim thay roomId tuong ung
 }
 
+void autoPickHost(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) {
+            roomList[roomID].host = roomList[roomID].players[i]->sockfd;
+            break;
+        }
+    }
+}
+
+int removePlayer2(int roomID, int player_sockfd) {
+    char* res = (char*)calloc(1025, sizeof(char));
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
+                    if (roomList[i].players[j]->sockfd == player_sockfd) {
+                        if (roomList[i].players[j]->state > 4) roomList[i].pointPool -= roomList[i].players[j]->point;
+                        roomList[i].players[j]->roomID = -1;
+                        roomList[i].players[j]->state = 2;
+                        roomList[i].players[j] = NULL;
+                        autoPickHost(roomID);
+                        return 1;
+                    }
+            }
+
+            return 0;
+        };
+    }
+
+    return 0;
+}
+
 void broadCastRoom(int screenID, int roomID, char* mes) {
     char* res = (char*)calloc(1025, sizeof(char));
 
@@ -109,14 +142,17 @@ void sendChatAndNotify(int roomID, char* mes) {
 
 char* getResRoom(int roomID) {
     char* resRoomResult = (char*)calloc(1025, sizeof(char));
+    int hostIndex = 0;
 
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] != NULL)
-                if (roomList[i].players[j]->sockfd == roomList[i].host) {
-                    sprintf(resRoomResult, "%d|", j);
-                    break;
+                if (roomList[i].players[j] != NULL) {
+                    if (roomList[i].players[j]->sockfd == roomList[i].host) {
+                        sprintf(resRoomResult, "%d|", hostIndex);
+                        break;
+                    }
+                    hostIndex++;
                 }
             }
             break;
@@ -169,6 +205,7 @@ int setPlayerReady(int roomID, int player_sockfd) {
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
                 if (roomList[i].players[j]->sockfd == player_sockfd) {
                     roomList[i].players[j]->state = 4;
                     return 1;
@@ -185,6 +222,7 @@ int setPlayerHolding(int roomID, int player_sockfd) {
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
                 if (roomList[i].players[j]->sockfd == player_sockfd) {
                     roomList[i].players[j]->state = 3;
                     return 1;
@@ -284,14 +322,17 @@ int startGame(int curr_player_sd, int roomID) {
 
 char* getResGame(int roomID) {
     char* resGameResult = (char*)calloc(1025, sizeof(char));
+    int hostIndex = 0;
 
     for (int i = 0; i < MAX_ROOM; i++) {        // Get host
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] != NULL)
-                if (roomList[i].players[j]->sockfd == roomList[i].host) {
-                    sprintf(resGameResult, "%d|", j);
-                    break;
+                if (roomList[i].players[j] != NULL) {
+                    if (roomList[i].players[j]->sockfd == roomList[i].host) {
+                        sprintf(resGameResult, "%d|", hostIndex);
+                        break;
+                    }
+                    hostIndex++;
                 }
             }
             break;
@@ -457,7 +498,7 @@ int summaryRound(int roomID) {
     sprintf(mes, "00|#|Round winner: %s - %s, %s, %s", roomList[roomID].players[highestIndex]->name, getCardName(roomList[roomID].players[highestIndex]->cards[0]), getCardName(roomList[roomID].players[highestIndex]->cards[1]), getCardName(roomList[roomID].players[highestIndex]->cards[2]));
     sendChatAndNotify(roomID, mes);
 
-    sleep(0.1);
+    sleep(1);
 
     if (roomList[roomID].players[highestIndex]->point > (roomList[roomID].pointPool)/2) {
         endGame(roomID, highestIndex);
