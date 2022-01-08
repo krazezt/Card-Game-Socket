@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
         max_clients = 30, activity, x, valread, sd;
-    int max_sd, res_type, tmp_roomID, tmp_screenID;
+    int max_sd, res_type, tmp_roomID, tmp_screenID, startGameReturn = 0;
     struct sockaddr_in address;
 
     char buffer[1025], res[1025], emptyStr[1025] = {'\0'};
@@ -191,9 +191,11 @@ int main(int argc, char *argv[]) {
                         case 0:
                             res_type = 0;
                             sprintf(res, "%s", getResRoomList());
+                            playerList[k].state = 2;
                             tmp_screenID = 2;
                             break;
                         case 1:
+                            res_type = 0;
                             sprintf(res, "Quit.\n");
                             break;
                         case 2:
@@ -207,10 +209,27 @@ int main(int argc, char *argv[]) {
                             break;
                         case 3:
                             tmpPlayer = findPlayer(sd);
-                            removePlayer(tmpPlayer.roomID, sd);
-                            sprintf(res, "Player removed\n");
-                            res_type = 1;
-                            tmp_roomID = playerList[k].roomID;
+                            tmp_roomID = tmpPlayer.roomID;
+                            if (tmpPlayer.state == 1) {
+                                res_type = 0;
+                                sprintf(res, "Quit\n");
+                            }
+                            else if (tmpPlayer.state == 2) {
+                                res_type = 0;
+                                sprintf(res, "01|");
+                            }
+                            else if (tmpPlayer.state == 3 || tmpPlayer.state == 4) {
+                                removePlayer(tmpPlayer.roomID, sd);
+                                strcpy(res, getResRoom(tmp_roomID));
+                                res_type = 1;
+                                tmp_screenID = 3;
+                            }
+                            else if (tmpPlayer.state > 4) {
+                                removePlayer(tmpPlayer.roomID, sd);
+                                strcpy(res, getResRoom(tmp_roomID));
+                                res_type = 1;
+                                tmp_screenID = 5;
+                            }
                             break;
                         case 4:
                             strcpy(res, createChatAndNotify(playerList[k].name, readChatContent(buffer)));
@@ -264,11 +283,15 @@ int main(int argc, char *argv[]) {
                             }
                             break;
                         case 9:
-                            if (startGame(playerList[k].sockfd, playerList[k].roomID)) {
+                            startGameReturn = startGame(playerList[k].sockfd, playerList[k].roomID);
+                            if (startGameReturn == 1) {
                                 strcpy(res, getResGame(playerList[k].roomID));
                                 res_type = 1;
                                 tmp_roomID = playerList[k].roomID;
                                 tmp_screenID = 4;
+                            } else if (startGameReturn == 2){
+                                sprintf(res, "00|#|Need >2 players to start game.|");
+                                res_type = 0;
                             } else {
                                 sprintf(res, "00|#|You are not the host or someone on holding.|");
                                 res_type = 0;
@@ -288,11 +311,12 @@ int main(int argc, char *argv[]) {
                                 tmp_screenID = 4;
                             }
                             if (checkAllBetted(playerList[k].roomID)) {
-                                summaryRound(playerList[k].roomID);
+                                tmp_screenID = 4;
+                                if (summaryRound(playerList[k].roomID)) tmp_screenID = 5;
+                                sleep(0.1);
                                 strcpy(res, getResGame(playerList[k].roomID));
                                 res_type = 1;
                                 tmp_roomID = playerList[k].roomID;
-                                tmp_screenID = 4;
                             }
                             break;
                         default:

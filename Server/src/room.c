@@ -55,6 +55,8 @@ int addPlayer(int roomID, Player* playerPtr) {                  //Them player va
 }
 
 int removePlayer(int roomID, int player_sockfd) {                           //Xoa player ra khoi phong, return 0 neu that bai, 1 neu thanh cong.
+    char* res = (char*)calloc(1025, sizeof(char));
+
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {                  //Tim kiem tat ca nguoi choi hien co trong phong.
@@ -63,6 +65,8 @@ int removePlayer(int roomID, int player_sockfd) {                           //Xo
                         roomList[i].players[j]->roomID = -1;
                         roomList[i].players[j]->state = 2;
                         roomList[i].players[j] = NULL;                      //Reset the slot
+                        sprintf(res, "%s", getResRoomList());
+                        send(player_sockfd, res, strlen(res), 0);
                         return 1;
                     }
             }
@@ -259,14 +263,17 @@ void initGame(int roomID) {
 }
 
 int startGame(int curr_player_sd, int roomID) {
-    char* res = (char*)calloc(1025, sizeof(char));
+    int count = 0;
+
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             if (curr_player_sd != roomList[i].host) return 0;     // Khong phai chu phong
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
                 if (roomList[i].players[j] != NULL)
                     if(roomList[i].players[j]->state < 4) return 0;
+                    else count++;
             }
+            if (count < 2) return 2;
             initGame(roomID);
             return 1;           // Tat ca deu ready
             break;
@@ -431,6 +438,7 @@ int endGame(int roomID, int winnerIndex) {
 
     sprintf(mes, "00|#|Final winner: %s|", roomList[roomID].players[winnerIndex]->name);
     sendChatAndNotify(roomID, mes);
+    return 0;
 }
 
 int summaryRound(int roomID) {
@@ -448,6 +456,8 @@ int summaryRound(int roomID) {
 
     sprintf(mes, "00|#|Round winner: %s - %s, %s, %s", roomList[roomID].players[highestIndex]->name, getCardName(roomList[roomID].players[highestIndex]->cards[0]), getCardName(roomList[roomID].players[highestIndex]->cards[1]), getCardName(roomList[roomID].players[highestIndex]->cards[2]));
     sendChatAndNotify(roomID, mes);
+
+    sleep(0.1);
 
     if (roomList[roomID].players[highestIndex]->point > (roomList[roomID].pointPool)/2) {
         endGame(roomID, highestIndex);
