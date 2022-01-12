@@ -19,7 +19,7 @@
 #define MAX 1025
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
-
+pthread_t tmp_thread;
 int ScreenNumber = 1;
 int isHost = 0;
 int status = 0;
@@ -53,7 +53,7 @@ void * reader(void* var){
         {
             printf("\nError!Cannot receive data from sever!\n");
             break;
-        }printf("%s\n",buff);
+        }//printf("%s\n",buff);
         commandCode = readCommandCode(buff);
         switch(commandCode){
             case 01:
@@ -61,7 +61,7 @@ void * reader(void* var){
             	ScreenNumber = 1;
             	
             	mainScreen();
-
+		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	break;
@@ -70,7 +70,8 @@ void * reader(void* var){
             	pthread_mutex_lock(&mutex1);
                 ScreenNumber = 2;
             	roomListScreen(getRoomList(buff));
-
+		
+		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	break;
@@ -88,8 +89,8 @@ void * reader(void* var){
                 part = readPartLeng(buff); part = (part-3)/2;
                 
             	roomScreen(getPlayerList(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-            	printf("enter your choice: ");
-
+            	
+		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	
@@ -105,11 +106,26 @@ void * reader(void* var){
                 
                 part = readPartLeng(buff); part = (part-3)/4;
             	gameScreen(getGameInfo(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-		printf("enter your choice: ");
+		
 		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
             	
+            	break;
+            case 05:
+            	pthread_mutex_lock(&mutex1);
+                ScreenNumber = 5;
+                strcpy(currScreen,buff);
+                currScreen[buff_bytes]='\0';
+                
+                currPoint = getPoint(getGameInfo(buff),atoi(readPart(buff, 1)));
+                
+                part = readPartLeng(buff); part = (part-3)/4;
+            	endGame(getGameInfo(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
+		
+		
+            	pthread_cond_signal(&cond1);
+            	pthread_mutex_unlock(&mutex1);
             	break;
             case 00:
                 pthread_mutex_lock(&mutex1);
@@ -150,6 +166,7 @@ void * reader(void* var){
 
 void * sender(void* var){
     char buff[MAX];
+    char tmp[MAX];
     int buff_bytes;
     int *conv = (int*) var;
     int client_sock = *conv;
@@ -158,13 +175,205 @@ void * sender(void* var){
     char* mes;
     char* mes_type;
     char nickname[15];
-
+	tmp_thread = pthread_self();
     while(1){
     	pthread_mutex_lock(&mutex1);
         pthread_cond_wait(&cond1, &mutex1);
         pthread_mutex_unlock(&mutex1);
         fflush(stdin);
-        switch(ScreenNumber){
+        scanf("%d",&choice); 
+
+		switch (choice)
+		{
+		case 1:
+			//go to roomlist
+			if(ScreenNumber == 1){
+				mes_type = "000|";
+
+            	send(client_sock, mes_type, strlen(mes_type), 0);
+			}
+			
+			//get in room
+			if(ScreenNumber == 2){
+				mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                	fflush(stdin);
+                	do{
+                	printf("enter room id: "); scanf("%d",&roomId); 
+                	if(roomId<0 || roomId>9) printf("Unknown room ID!\n");
+                	}while(roomId<0 || roomId>9);
+                	sprintf (mes, "002|%d", roomId);
+                	printf("enter your nickname: "); scanf("%s",nickname); 
+                	
+                	sprintf (mes, "%s|%s|", mes,nickname);
+
+                	send(client_sock, mes, strlen(mes), 0);
+			}
+
+			//switch status
+			if(ScreenNumber == 3){
+				if(status == 0){
+                    	    mes_type = "005|";
+                    	    status = 1;
+                    	    
+                    	    send(client_sock, mes_type, strlen(mes_type), 0);
+                    	}else{
+                    	    mes_type = "006|";
+                    	    status = 0;
+                    	    
+                    	    send(client_sock, mes_type, strlen(mes_type), 0);
+                    	}
+			}
+
+			//chat
+			if(ScreenNumber == 4 || ScreenNumber == 5){
+				mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                    	printf("Enter your message: ");
+                    	if(fgets(buff,MAX,stdin) != NULL);
+                    	fgets(buff,MAX,stdin);
+                    	buff[strlen(buff)-1] = '\0';
+                    	sprintf (mes, "004|%s|", buff);
+                    	choice = 0;
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+			}
+
+			
+			break;
+		
+		case 2:
+			//exit
+			if(ScreenNumber == 1){
+				exit(1);
+			}
+
+			//return
+			if(ScreenNumber == 2 || ScreenNumber == 5){
+				mes_type = "003|";
+                	ScreenNumber--;
+					if(ScreenNumber == 5){ScreenNumber--;}
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+                	
+			}
+			
+			//chat
+			if(ScreenNumber == 3){
+				mes = NULL;
+                    	mes = calloc(MAX, sizeof(char));
+                    	printf("Enter your message: ");
+                    	fgets(buff,MAX,stdin);
+                    	
+                    	
+                    	if(buff[0] == '\n'){
+                           fgets(buff,MAX,stdin);
+                    	    
+                    	}
+                    	sprintf (mes, "004|%s|", buff);
+                    	mes[strlen(mes)-2] = '|';
+                    	mes[strlen(mes)-1] = '\0';
+                    	choice = 0;
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+			}
+			
+			//bet
+			if(ScreenNumber == 4){
+				
+                	mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                	printf("Enter point to bet: "); scanf("%d",&point); 
+                	
+                    	sprintf (mes, "011|%d|", point);
+                    	choice = 0;
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+			}
+			
+			break;
+		
+		case 3:
+			//kick player
+			if(ScreenNumber == 3){
+				mes = NULL;
+                 	mes = calloc(MAX, sizeof(char));
+                 	if(isHost == 1){
+                    	printf("Who will be kicked: ");
+                    	scanf("%s",nickname); 
+                    	sprintf (mes, "007|%s|", nickname);
+                    	
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	}else{
+                    	    
+                	    mes_type = "003|";
+                	    ScreenNumber--;
+                	    send(client_sock, mes_type, strlen(mes_type), 0);
+                	    
+						}
+					free(mes);
+			}
+			
+			//get card
+			if(ScreenNumber == 4){
+				if(isHost == 1){
+                 	
+                	mes_type = "010|";
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+				}
+			}
+			break;
+
+		case 4:
+			//allow to host
+			if(ScreenNumber == 3){
+				if(isHost == 1){
+                 	check = 0;
+                 	mes = NULL;
+                 	mes = calloc(MAX, sizeof(char));
+                    	printf("Who will be allowed: ");
+                    	scanf("%s",nickname); 
+                    	sprintf (mes, "008|%s|", nickname);
+                    	choice = 0;
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	}else{
+                    	 
+                    	 printf("enter your choice: ");
+						}
+					free(mes);
+			}
+			break;
+
+		case 5:
+			//start game
+			if(ScreenNumber == 3){
+				if(isHost == 1){
+                    mes_type = "009|";
+            	    choice = 0;
+            	    send(client_sock, mes_type, strlen(mes_type), 0);
+				}
+			}
+			break;
+		
+		case 6:
+			//quit
+			if(ScreenNumber == 3){
+				if(isHost == 1){
+                 	check = 0;
+                	mes_type = "003|";
+                	ScreenNumber--;
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+                	}else{
+                    	 
+                    	 printf("enter your choice: ");
+					}
+			}
+			break;
+		default:
+			printf("Wrong number!");
+			break;
+		}
+
+/*        switch(ScreenNumber){
             case 1:
             	check = 1;
             	while(check == 1) {
@@ -173,12 +382,14 @@ void * sender(void* var){
                 scanf("%d",&choice); 
                 if(choice == 1){
                 	check = 0;
+                	choice = 0;
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	
                 		
                 }else if(choice == 2){
                 	exit(1);
                 }else {printf("Wrong number\n");
+                if(fgets(tmp,MAX,stdin)!=NULL);
                 printf("enter your choice: ");}
 		}
                 
@@ -202,14 +413,16 @@ void * sender(void* var){
                 	printf("enter your nickname: "); scanf("%s",nickname); 
                 	
                 	sprintf (mes, "%s|%s|", mes,nickname);
+                	choice = 0;
 
                 	send(client_sock, mes, strlen(mes), 0);
                 }else if(choice == 2){
                 	check = 0;
                 	mes_type = "003|";
+                	ScreenNumber--;
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	free(mes);
-                }else {printf("Wrong number!\n");
+                }else {if(fgets(tmp,MAX,stdin)!=NULL);
                 	printf("enter your choice: ");
                 }
 		}
@@ -229,14 +442,16 @@ void * sender(void* var){
                     	if(status == 0){
                     	    mes_type = "005|";
                     	    status = 1;
+                    	    choice = 0;
                     	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}else{
                     	    mes_type = "006|";
                     	    status = 0;
+                    	    choice = 0;
                     	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}
                     	
-                 }
+                }
                         
                  else if(choice == 2){
                     	check = 0;
@@ -253,7 +468,7 @@ void * sender(void* var){
                     	sprintf (mes, "004|%s|", buff);
                     	mes[strlen(mes)-2] = '|';
                     	mes[strlen(mes)-1] = '\0';
-                    	printf("%s\n",mes);
+                    	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	free(mes);
                  }
@@ -265,10 +480,12 @@ void * sender(void* var){
                     	printf("Who will be kicked: ");
                     	scanf("%s",nickname); 
                     	sprintf (mes, "007|%s|", nickname);
+                    	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	}else{
                     	    check = 0;
                 	    mes_type = "003|";
+                	    ScreenNumber--;
                 	    send(client_sock, mes_type, strlen(mes_type), 0);
                 	    
 			}
@@ -282,9 +499,10 @@ void * sender(void* var){
                     	printf("Who will be allowed: ");
                     	scanf("%s",nickname); 
                     	sprintf (mes, "008|%s|", nickname);
+                    	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	}else{
-                    	 printf("Wrong number!\n");
+                    	 
                     	 printf("enter your choice: ");
 			}
 			free(mes);
@@ -293,9 +511,10 @@ void * sender(void* var){
                  	check = 0;
                     	if(isHost == 1){
                     	    mes_type = "009|";
+                    	    choice = 0;
                     	    send(client_sock, mes_type, strlen(mes_type), 0);
                     	}else{
-                    	 printf("Wrong number!\n");
+                    	 
                     	 printf("enter your choice: ");
 			}
 			
@@ -304,14 +523,15 @@ void * sender(void* var){
                  	if(isHost == 1){
                  	check = 0;
                 	mes_type = "003|";
+                	ScreenNumber--;
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	}else{
-                    	 printf("Wrong number!\n");
+                    	 
                     	 printf("enter your choice: ");
 			}
                  }
                  else{
-                    	 printf("Wrong number!\n");
+                    	 if(fgets(tmp,MAX,stdin)!=NULL);
                     	 printf("enter your choice: ");
 			}
                 	
@@ -333,7 +553,7 @@ void * sender(void* var){
                     	fgets(buff,MAX,stdin);
                     	buff[strlen(buff)-1] = '\0';
                     	sprintf (mes, "004|%s|", buff);
-                    	
+                    	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	free(mes);
                 }else if(choice == 2){
@@ -343,29 +563,59 @@ void * sender(void* var){
                 	printf("Enter point to bet: "); scanf("%d",&point); 
                 	
                     	sprintf (mes, "011|%d|", point);
-                    	
+                    	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	free(mes);
                 }else if(choice == 3){
                 	if(isHost == 1){
                  	check = 0;
-                	mes_type = "010|";
+                	mes_type = "010|";choice = 0;
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	}else{
-                    	 printf("Wrong number!\n");
+                    	 
                     	 printf("enter your choice: ");
 			}
-                }else{printf("Wrong number!\n");
+                }else{if(fgets(tmp,MAX,stdin)!=NULL);
                 	printf("enter your choice: ");
                 }
 		}
                 
             	break;
+            case 5:
+            	check =1;
+		while(check == 1){
+     
+                scanf("%d",&choice); 
+                	
+                if(choice == 1){
+                	check = 0;
+                	mes = NULL;
+                	mes = calloc(MAX, sizeof(char));
+                    	printf("Enter your message: ");
+                    	if(fgets(buff,MAX,stdin) != NULL);
+                    	fgets(buff,MAX,stdin);
+                    	buff[strlen(buff)-1] = '\0';
+                    	sprintf (mes, "004|%s|", buff);
+                    	choice = 0;
+                    	send(client_sock, mes, strlen(mes), 0);
+                    	free(mes);
+                }else if(choice == 2){
+                	check = 0;
+                	mes_type = "003|";
+                	ScreenNumber--;
+                	send(client_sock, mes_type, strlen(mes_type), 0);
+                
+                }else{if(fgets(tmp,MAX,stdin)!=NULL);
+                	printf("enter your choice: ");
+                }
+		}
+            	break;
             default:
-            	
+            	if(fgets(tmp,MAX,stdin)!=NULL); 
             	break;
         }
-    }
+    */
+	}
 }
 
 
@@ -373,7 +623,7 @@ int main(int argc, char *argv[]){
     struct sockaddr_in address;
     pthread_t tid1, tid2;
     int client_sock;
-
+    int oldScreen = ScreenNumber;
     if (argc != 2)
     {
         printf("error, too many or too few arguments\n");
@@ -409,7 +659,7 @@ int main(int argc, char *argv[]){
     pthread_create(&tid2,NULL,&sender,&client_sock);
     pthread_join(tid1,NULL);
 
-    
+
 
     //Step 4: Close socket
     close(client_sock);
