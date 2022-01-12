@@ -136,7 +136,7 @@ void gameScreen(GameInfo* players,int host, int you, int part){
     	sprintf(point,"%d ",(players+i)->point); 
     	sprintf(bet,"%d ",(players+i)->bet);	  
     	printf("| %s",point);  for (int j=0; j<8-strlen(point);j++){printf(" ");}
-    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(bet);j++){printf(" ");}
     	}else{printf("|    0    ");}
     	if((players+i)->isLose == 1) printf("|  x   "); else printf("|      ");
     	if(i == host) printf("|  x   |\n"); else printf("|      |\n");
@@ -175,7 +175,7 @@ void endGame(GameInfo* players,int host, int you, int part){
     	sprintf(point,"%d ",(players+i)->point); 
     	sprintf(bet,"%d ",(players+i)->bet);	  
     	printf("| %s",point);  for (int j=0; j<8-strlen(point);j++){printf(" ");}
-    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(bet);j++){printf(" ");}
     	}else{printf("|    0    ");}
     	if((players+i)->isLose == 1) printf("|  x   "); else printf("|      ");
     	if(i == host) printf("|  x   |\n"); else printf("|      |\n");
@@ -192,7 +192,7 @@ void endGame(GameInfo* players,int host, int you, int part){
 
 void messeges(Message mesList[],int mesNumber){
     //message screen
-            	printf("\n----------------------------------------------------------\n");
+            	
             	if(mesNumber < 10){
             	for(int i= 0; i<mesNumber;i++){
             	if(strcmp(mesList[i].name , "#") == 0)

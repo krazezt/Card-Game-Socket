@@ -89,7 +89,8 @@ void * reader(void* var){
                 part = readPartLeng(buff); part = (part-3)/2;
                 
             	roomScreen(getPlayerList(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-            	
+            	if(mesNumber>0){
+		messeges(mesList,mesNumber);}
 		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
@@ -106,7 +107,8 @@ void * reader(void* var){
                 
                 part = readPartLeng(buff); part = (part-3)/4;
             	gameScreen(getGameInfo(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-		
+		if(mesNumber>0){
+		messeges(mesList,mesNumber);}
 		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
@@ -118,11 +120,11 @@ void * reader(void* var){
                 strcpy(currScreen,buff);
                 currScreen[buff_bytes]='\0';
                 
-                currPoint = getPoint(getGameInfo(buff),atoi(readPart(buff, 1)));
                 
                 part = readPartLeng(buff); part = (part-3)/4;
             	endGame(getGameInfo(buff),atoi(readPart(buff, 2)),atoi(readPart(buff, 1)),part);
-		
+		if(mesNumber>0){
+		messeges(mesList,mesNumber);}
 		
             	pthread_cond_signal(&cond1);
             	pthread_mutex_unlock(&mutex1);
@@ -133,19 +135,28 @@ void * reader(void* var){
             	strcpy(newMes.name,readPart(buff, 1));
 		strcpy(newMes.content,readPart(buff, 2));
 		mesList[mesNumber] = newMes;
-		/*
-		if(ScreenNumber == 3){
-                   part = readPartLeng(currScreen); part = (part-3)/2;
+		
+		switch(readCommandCode(currScreen)){
+		    case 03:
+                	//printf screen
+                	part = readPartLeng(currScreen); part = (part-3)/2;
                 
-            	    roomScreen(getPlayerList(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
-		}
+            		roomScreen(getPlayerList(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
+            		break;
+            		
+		    case 04:
+		        part = readPartLeng(currScreen); part = (part-3)/4;
+            		gameScreen(getGameInfo(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
+            		break;
+            		
+		    case 05:
+		        part = readPartLeng(currScreen); part = (part-3)/4;
+            		endGame(getGameInfo(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
+            		break;
+		    default:
+		        break;
 		
-		
-		if(ScreenNumber == 4){
-		    part = readPartLeng(currScreen); part = (part-3)/4;
-            	    gameScreen(getGameInfo(currScreen),atoi(readPart(currScreen, 2)),atoi(readPart(currScreen, 1)),part);
 		}
-		*/
 		
 		
             	mesNumber++;
@@ -182,9 +193,10 @@ void * sender(void* var){
         pthread_mutex_unlock(&mutex1);
 		TOP:
         fflush(stdin);
-		if(fgets(tmp,MAX,stdin)!=NULL);
+	do{
         scanf("%d",&choice); 
-
+        if(choice<1 || choice >6) printf("Wrong Number!");
+	}while(choice<1 || choice >6);
 		switch (choice)
 		{
 		case 1:
@@ -254,7 +266,8 @@ void * sender(void* var){
 			else if(ScreenNumber == 2 || ScreenNumber == 5){
 				mes_type = "003|";
                 	ScreenNumber--;
-					if(ScreenNumber == 5){ScreenNumber--;}
+					if(ScreenNumber == 5){ScreenNumber--;
+					mesNumber = 0;}
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	
 			}
