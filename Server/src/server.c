@@ -245,34 +245,54 @@ int main(int argc, char *argv[]) {
                         case 2:
                             strcpy(playerList[k].name, readPlayerName(buffer));
                             playerList[k].roomID = readRoomID(buffer);
-                            addPlayer(playerList[k].roomID, &(playerList[k])); // TODO: Room day`
-                            strcpy(res, getResRoom(playerList[k].roomID));
-                            res_type = 1;   //Send the response to all players in room.
-                            tmp_roomID = playerList[k].roomID;
-                            tmp_screenID = 3;
+                            if (addPlayer(playerList[k].roomID, &(playerList[k]))) {
+                                strcpy(res, getResRoom(playerList[k].roomID));
+                                res_type = 1;   //Send the response to all players in room.
+                                tmp_roomID = playerList[k].roomID;
+                                tmp_screenID = 3;
+                            } else {
+                                res_type = 0;
+                                sprintf(res, "%s", getResRoomList());
+                                tmp_screenID = 2;
+                            }
                             break;
                         case 3:
                             tmpPlayer = findPlayer(sd);
                             tmp_roomID = tmpPlayer.roomID;
-                            if (tmpPlayer.state == 1) {
-                                res_type = 0;
-                                sprintf(res, "Quit\n");
-                            }
-                            else if (tmpPlayer.state == 2) {
-                                res_type = 0;
-                                sprintf(res, "01|");
-                            }
-                            else if (tmpPlayer.state == 3 || tmpPlayer.state == 4) {
-                                removePlayer(tmpPlayer.roomID, sd);
-                                strcpy(res, getResRoom(tmp_roomID));
-                                res_type = 1;
-                                tmp_screenID = 3;
-                            }
-                            else if (tmpPlayer.state > 4) {
-                                removePlayer(tmpPlayer.roomID, sd);
-                                strcpy(res, getResRoom(tmp_roomID));
-                                res_type = 1;
-                                tmp_screenID = 4;
+
+                            switch (tmpPlayer.state) {
+                                case 1:
+                                    res_type = 0;
+                                    sprintf(res, "Quit\n");
+                                    break;
+                                case 2:
+                                    res_type = 0;
+                                    sprintf(res, "01|");
+                                    break;
+                                case 3:
+                                case 4:
+                                    removePlayer(tmpPlayer.roomID, sd);
+                                    strcpy(res, getResRoom(tmp_roomID));
+                                    res_type = 1;
+                                    tmp_screenID = 3;
+                                    break;
+                                case 5:
+                                case 6:
+                                case 7:
+                                    removePlayer(tmpPlayer.roomID, sd);
+                                    strcpy(res, getResRoom(tmp_roomID));
+                                    res_type = 1;
+                                    tmp_screenID = 4;
+                                    break;
+                                case 8:
+                                    removePlayer(tmpPlayer.roomID, sd);
+                                    strcpy(res, getResRoom(tmp_roomID));
+                                    res_type = 1;
+                                    tmp_screenID = 5;
+                                    break;
+                                
+                                default:
+                                    break;
                             }
                             break;
                         case 4:
