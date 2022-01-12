@@ -33,3 +33,4 @@ void roomListScreen(RoomList*);
 void roomScreen(RoomInfo*,int, int,int);
 void messeges(Message* ,int );
 void gameScreen(GameInfo* ,int , int , int);
+void endGame(GameInfo* ,int , int , int);

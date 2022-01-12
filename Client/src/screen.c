@@ -49,18 +49,18 @@ int getPoint(GameInfo* players, int you){
 
 void mainScreen(){
     
-    printf("+=====================================+\n");
+    printf("\n+=====================================+\n");
     printf("|         Welcome to the game         |\n");
     printf("+=====================================+\n");
     printf("|1. Room list.                        |\n");
     printf("|2. Quit.                             |\n");
     printf("+=====================================+\n");
-    printf("enter your choice: ");
+
     
 };
 
 void roomListScreen(RoomList* rooms){
-    printf("/////////////////////////////////////////////////////////////////////////\n");
+    printf("\n/////////////////////////////////////////////////////////////////////////\n");
     printf("+=========+==================+========+=========+\n");
     printf("| Room ID |       Host       |  Slot  | Playing |\n");
     //printf("|  00001  |    ThienNT123    |  5/6   |         |\n");
@@ -74,15 +74,15 @@ void roomListScreen(RoomList* rooms){
     	if((rooms+i)->isPlaying == 0) x = ' '; else x = 'x';
     	printf("|   00%d   |  %s |  %d/6   |    %c    |\n",(rooms+i)->id,host,(rooms+i)->slot,x);
     }
-    printf("+=========+==================+========+=========+\n");
+    printf("\n+=========+==================+========+=========+\n");
     printf("1.Join room\n");
     printf("2.Quit\n");
     printf("-------------------------------------------------\n");
-    printf("enter your choice: ");
+
 };
 
 void roomScreen(RoomInfo* players,int host, int you, int part){
-    printf("/////////////////////////////////////////////////////////////////////////\n");
+    printf("\n/////////////////////////////////////////////////////////////////////////\n");
     printf("+=====+==================+==========+======+\n");
     printf("|     |     Nickname     |  Status  | Host |\n");
     //printf("|     |    ThienNT123    |  Holding |      |\n");
@@ -114,34 +114,35 @@ void roomScreen(RoomInfo* players,int host, int you, int part){
     	printf("3.Quit\n");
     }
     printf("--------------------------------------------\n");
-    
+
 };
 
 void gameScreen(GameInfo* players,int host, int you, int part){
-    printf("/////////////////////////////////////////////////////////////////////////\n");
-    printf("+=====+==================+=========+=======+======+======+\n");
-    printf("|     |     Nickname     |  Point  |  Bet  | Lose | Host |\n");
+    printf("\n/////////////////////////////////////////////////////////////////////////\n");
+    printf("+=====+==================+=========+=========+======+======+\n");
+    printf("|     |     Nickname     |  Point  |   Bet   | Lose | Host |\n");
     //printf("|     |    ThienNT123    |  8000   | 2000  |      |      |\n");
     for(int i =0; i<part; i++){
 
     	char person[15] = {' '};
-    	char point[5] = {' '};
-    	char bet[5] = {' '};
+    	char point[8] = {' '};
+    	char bet[8] = {' '};
     	strcpy(person, (players+i)->name);
     	for(int j = strlen((players+i)->name); j<15;j++)
     	{person[j] = ' ';}
     	person[15] = '\0';   
     	if(i == you) printf("| you "); else printf("|     ");
     	printf("| %s  ",person);
-    	sprintf(point,"%d",(players+i)->point); point[5] = ' ';
-    	sprintf(bet,"%d",(players+i)->bet);	  bet[5] = ' ';
-    	printf("| %s",point); for(int i=0;i<(6 - strlen(point)); i++) {printf(" ");} printf("  ");
-    	printf("| %s",bet); for(int i=0;i<(6 - strlen(bet)); i++) {printf(" ");} 
+    	sprintf(point,"%d ",(players+i)->point); 
+    	sprintf(bet,"%d ",(players+i)->bet);	  
+    	printf("| %s",point);  for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	}else{printf("|    0    ");}
     	if((players+i)->isLose == 1) printf("|  x   "); else printf("|      ");
     	if(i == host) printf("|  x   |\n"); else printf("|      |\n");
     }
-    for(;part<6;part++) printf("|     |                  |         |       |      |      |\n");
-    printf("+=====+==================+=========+=======+======+======+\n");
+    for(;part<6;part++) printf("|     |                  |         |         |      |      |\n");
+    printf("+=====+==================+=========+=========+======+======+\n");
     if(you == host){
     	printf("1.chat\n");
     	printf("2.bet\n");
@@ -155,9 +156,43 @@ void gameScreen(GameInfo* players,int host, int you, int part){
 
 };
 
+void endGame(GameInfo* players,int host, int you, int part){
+    printf("\n/////////////////////////////////////////////////////////////////////////\n");
+    printf("+=====+==================+=========+=========+======+======+\n");
+    printf("|     |     Nickname     |  Point  |   Bet   | Lose | Host |\n");
+    //printf("|     |    ThienNT123    |  8000   | 2000  |      |      |\n");
+    for(int i =0; i<part; i++){
+
+    	char person[15] = {' '};
+    	char point[8] = {' '};
+    	char bet[8] = {' '};
+    	strcpy(person, (players+i)->name);
+    	for(int j = strlen((players+i)->name); j<15;j++)
+    	{person[j] = ' ';}
+    	person[15] = '\0';   
+    	if(i == you) printf("| you "); else printf("|     ");
+    	printf("| %s  ",person);
+    	sprintf(point,"%d ",(players+i)->point); 
+    	sprintf(bet,"%d ",(players+i)->bet);	  
+    	printf("| %s",point);  for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	if((players+i)->bet!=0){printf("| %s",bet);    for (int j=0; j<8-strlen(point);j++){printf(" ");}
+    	}else{printf("|    0    ");}
+    	if((players+i)->isLose == 1) printf("|  x   "); else printf("|      ");
+    	if(i == host) printf("|  x   |\n"); else printf("|      |\n");
+    }
+    for(;part<6;part++) printf("|     |                  |         |         |      |      |\n");
+    printf("+=====+==================+=========+=======+========+======+\n");
+
+    	printf("1.chat\n");
+    	printf("2.quit\n");
+
+    printf("----------------------------------------------------------\n");
+
+};
+
 void messeges(Message mesList[],int mesNumber){
     //message screen
-            	printf("----------------------------------------------------------\n");
+            	printf("\n----------------------------------------------------------\n");
             	if(mesNumber < 10){
             	for(int i= 0; i<mesNumber;i++){
             	if(strcmp(mesList[i].name , "#") == 0)
@@ -174,6 +209,5 @@ void messeges(Message mesList[],int mesNumber){
     	    	printf("----------------------------------------------------------\n");
     		//
     		
-                printf("enter your choice: ");
 };
 
