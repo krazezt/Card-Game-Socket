@@ -131,12 +131,14 @@ int removePlayer2(int roomID, int player_sockfd) {
 
 void broadCastRoom(int screenID, int roomID, char* mes) {
     char* res = (char*)calloc(1025, sizeof(char));
+    int index = 0;
 
     for (int i = 0; i < MAX_ROOM; i++) {
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
                 if (roomList[i].players[j] != NULL) {
-                    sprintf(res, "%02d|%d|%s", screenID, j, mes);
+                    sprintf(res, "%02d|%d|%s", screenID, index, mes);
+                    index++;
                     send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
                 }
             }
@@ -485,7 +487,7 @@ void checkLose(int roomID) {
 int endGame(int roomID, int winnerIndex) {
     char* mes = (char*)calloc(1025, sizeof(char));
 
-    for (int i = 1; i < MAX_PLAYER_IN_ROOM; i++) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
         if (roomList[roomID].players[i] != NULL)
             roomList[roomID].players[i]->state = 8;
     }

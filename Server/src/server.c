@@ -280,13 +280,13 @@ int main(int argc, char *argv[]) {
                                 case 6:
                                 case 7:
                                     removePlayer(tmpPlayer.roomID, sd);
-                                    strcpy(res, getResRoom(tmp_roomID));
+                                    strcpy(res, getResGame(tmp_roomID));
                                     res_type = 1;
                                     tmp_screenID = 4;
                                     break;
                                 case 8:
                                     removePlayer(tmpPlayer.roomID, sd);
-                                    strcpy(res, getResRoom(tmp_roomID));
+                                    strcpy(res, getResGame(tmp_roomID));
                                     res_type = 1;
                                     tmp_screenID = 5;
                                     break;
