@@ -105,7 +105,7 @@ void roomScreen(RoomInfo* players,int host, int you, int part){
     	printf("1.Switch status\n");
     	printf("2.Chat\n");
     	printf("3.Kick player\n");
-    	printf("4.Allow to Host\n");
+    	printf("4.Promote to Host\n");
     	printf("5.Start game\n");
     	printf("6.Quit\n");
     }else{
