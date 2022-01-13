@@ -145,7 +145,7 @@ void gameScreen(GameInfo* players,int host, int you, int part){
     printf("+=====+==================+=========+=========+======+======+\n");
     if(you == host){
     	printf("1.Chat\n");
-    	printf("2.Qet\n");
+    	printf("2.Bet\n");
     	printf("3.Get card\n");
 
     }else{
