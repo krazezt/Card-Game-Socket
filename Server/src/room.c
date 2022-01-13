@@ -33,14 +33,40 @@ int countPlayer(int roomID) {
     return count;
 }
 
-int addPlayer(int roomID, Player* playerPtr) {                  //Them player vao phong, return 0 neu that bai, 1 neu thanh cong.
+int countPlaying(int roomID) {
+    int count = 0;
+
+    for (int i = 0; i < MAX_ROOM; i++) {
+        if (roomList[i].id == roomID) {
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL) 
+                    if (roomList[i].players[j]->lose == 0) count++;
+            }
+            break;
+        };
+    }
+
+    return count;
+}
+
+int findPlayerInRoom(int roomID, char* name) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL)
+            if (strcmp(roomList[roomID].players[i]->name, name) == 0) return 1;
+    }
+    return 0;
+}
+
+int addPlayer(int roomID, Player* playerPtr) {
+    if (findPlayerInRoom(roomID, playerPtr->name)) return 0;
+    
     int i = 0;
     while (1) {
-        if (i >= MAX_ROOM) return 0;                            //Khong tim thay roomId tuong ung
+        if (i >= MAX_ROOM) return 0;
         if (roomList[i].id == roomID) {
-            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {      //Tim kiem tat ca nguoi choi hien co trong phong.
-                if (roomList[i].players[j] == NULL) {           //Tim thay slot trong
-                    roomList[i].players[j] = playerPtr;         //Cho playerPtr vao slot do
+            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] == NULL) {
+                    roomList[i].players[j] = playerPtr;
                     roomList[i].players[j]->roomID == roomID;
                     roomList[i].players[j]->state = 3;
                     if (roomList[i].host == 0) roomList[i].host = playerPtr->sockfd;
@@ -54,57 +80,50 @@ int addPlayer(int roomID, Player* playerPtr) {                  //Them player va
     return 0;
 }
 
-int removePlayer(int roomID, int player_sockfd) {                           //Xoa player ra khoi phong, return 0 neu that bai, 1 neu thanh cong.
+void autoPickHost(int roomID) {
+    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL) {
+            roomList[roomID].host = roomList[roomID].players[i]->sockfd;
+            return;
+        }
+    }
+
+    roomList[roomID].host = 0;
+}
+
+int removePlayer(int roomID, int player_sockfd) {
     char* res = (char*)calloc(1025, sizeof(char));
 
-    for (int i = 0; i < MAX_ROOM; i++) {
-        if (roomList[i].id == roomID) {
-            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {                  //Tim kiem tat ca nguoi choi hien co trong phong.
-                if (roomList[i].players[j] != NULL)
-                    if (roomList[i].players[j]->sockfd == player_sockfd) {  //Tim thay player tuong ung
-                        roomList[i].players[j]->roomID = -1;
-                        roomList[i].players[j]->state = 2;
-                        roomList[i].players[j] = NULL;                      //Reset the slot
-                        sprintf(res, "%s", getResRoomList());
-                        send(player_sockfd, res, strlen(res), 0);
-                        return 1;
-                    }
+    for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+           if (roomList[roomID].players[j] != NULL)
+                if (roomList[roomID].players[j]->sockfd == player_sockfd) {
+
+                roomList[roomID].players[j]->roomID = -1;
+                roomList[roomID].players[j]->state = 2;
+                roomList[roomID].players[j] = NULL;                      //Reset the slot
+                if (roomList[roomID].host == player_sockfd) autoPickHost(roomID);
+                sprintf(res, "%s", getResRoomList());
+                send(player_sockfd, res, strlen(res), 0);
+                return 1;
             }
-            return 0;                                                       //Khong tim thay player
-        };
     }
 
     return 0;                                                               //Khong tim thay roomId tuong ung
 }
 
-void autoPickHost(int roomID) {
-    for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
-        if (roomList[roomID].players[i] != NULL) {
-            roomList[roomID].host = roomList[roomID].players[i]->sockfd;
-            break;
-        }
-    }
-}
-
 int removePlayer2(int roomID, int player_sockfd) {
     char* res = (char*)calloc(1025, sizeof(char));
 
-    for (int i = 0; i < MAX_ROOM; i++) {
-        if (roomList[i].id == roomID) {
-            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] != NULL)
-                    if (roomList[i].players[j]->sockfd == player_sockfd) {
-                        if (roomList[i].players[j]->state > 4) roomList[i].pointPool -= roomList[i].players[j]->point;
-                        roomList[i].players[j]->roomID = -1;
-                        roomList[i].players[j]->state = 2;
-                        roomList[i].players[j] = NULL;
-                        autoPickHost(roomID);
-                        return 1;
-                    }
+    for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+        if (roomList[roomID].players[j] != NULL)
+            if (roomList[roomID].players[j]->sockfd == player_sockfd) {
+                if (roomList[roomID].players[j]->state > 4) roomList[roomID].pointPool -= roomList[roomID].players[j]->point;
+                roomList[roomID].players[j]->roomID = -1;
+                roomList[roomID].players[j]->state = 2;
+                roomList[roomID].players[j] = NULL;
+                if (roomList[roomID].host == player_sockfd) autoPickHost(roomID);
+                return 1;
             }
-
-            return 0;
-        };
     }
 
     return 0;
@@ -268,6 +287,7 @@ int promotePlayer(int curr_player_sd, int roomID, char *playerToKick) {
                         roomList[i].host = roomList[i].players[j]->sockfd;
                         sprintf(res, "00|#|You are the host now!|");
                         send(roomList[i].players[j]->sockfd, res, strlen(res), 0);
+                        sleep(0.5);
                         return 1;
                         break;
                     }
@@ -354,22 +374,6 @@ char* getResGame(int roomID) {
     return tmpResult;
 }
 
-int countPlaying(int roomID) {
-    int count = 0;
-
-    for (int i = 0; i < MAX_ROOM; i++) {
-        if (roomList[i].id == roomID) {
-            for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-                if (roomList[i].players[j] != NULL) 
-                    if (roomList[i].players[j]->lose == 0) count++;
-            }
-            break;
-        };
-    }
-
-    return count;
-}
-
 int distributeCardRoom(int curr_player_sd, int roomID) {
     int roomIndex;
     char* res = (char*)calloc(1025, sizeof(char));
@@ -390,6 +394,7 @@ int distributeCardRoom(int curr_player_sd, int roomID) {
                 roomList[roomIndex].players[i]->cards[0] = cards[j*3];
                 roomList[roomIndex].players[i]->cards[1] = cards[j*3 + 1];
                 roomList[roomIndex].players[i]->cards[2] = cards[j*3 + 2];
+                roomList[roomIndex].players[i]->state = 6;
                 sprintf(res, "00|#|Your cards: %s, %s, %s|", getCardName(roomList[roomIndex].players[i]->cards[0]), getCardName(roomList[roomIndex].players[i]->cards[1]), getCardName(roomList[roomIndex].players[i]->cards[2]));
                 send(roomList[roomIndex].players[i]->sockfd, res, strlen(res), 0);
                 j++;
@@ -409,34 +414,37 @@ int betPoint(int curr_player_sd, int roomID, int amount) {
     }
 
     for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
-        if (roomList[roomID].players[j] != NULL)
-            if (roomList[roomID].players[j]->sockfd == curr_player_sd) {
-                if (roomList[roomID].players[j]->lose == 1) {
-                    sprintf(res, "00|#|You are loser :D|");
-                    send(curr_player_sd, res, strlen(res), 0);
-                    return 0;
-                }
-
-                if (amount > roomList[roomID].players[j]->point) {
-                    sprintf(res, "00|#|Bet point must be less than your total point.|");
-                    send(curr_player_sd, res, strlen(res), 0);
-                    return 0;
-                }
-
-                roomList[roomID].players[j]->bet = amount;
-                roomList[roomID].players[j]->point -= amount;
-                roomList[roomID].players[j]->state = 6;
-                return 1;
-
-                break;
+        if (roomList[roomID].players[j]->sockfd == curr_player_sd) {
+            if (roomList[roomID].players[j]->lose == 1) {
+                sprintf(res, "00|#|You are loser :D|");
+                send(curr_player_sd, res, strlen(res), 0);
+                return 0;
             }
+
+            if (amount > roomList[roomID].players[j]->point) {
+                sprintf(res, "00|#|Bet point must be less than your total point.|");
+                send(curr_player_sd, res, strlen(res), 0);
+                return 0;
+            }
+
+            if (roomList[roomID].players[j]->state < 6) {
+                sprintf(res, "00|#|Need to receive cards first.|");
+                send(curr_player_sd, res, strlen(res), 0);
+                return 0;
+            }
+
+            roomList[roomID].players[j]->bet = amount;
+            roomList[roomID].players[j]->point -= amount;
+            roomList[roomID].players[j]->state = 7;
+            return 1;
+        }
     }
 }
 
 int checkAllBetted(int roomID) {
     for (int i = 0; i < MAX_PLAYER_IN_ROOM; i++) {
         if (roomList[roomID].players[i] != NULL)
-            if (roomList[roomID].players[i]->lose != 1 && roomList[roomID].players[i]->state != 6) return 0;
+            if (roomList[roomID].players[i]->lose != 1 && roomList[roomID].players[i]->state != 7) return 0;
     }
 
     return 1;
@@ -476,6 +484,11 @@ void checkLose(int roomID) {
 
 int endGame(int roomID, int winnerIndex) {
     char* mes = (char*)calloc(1025, sizeof(char));
+
+    for (int i = 1; i < MAX_PLAYER_IN_ROOM; i++) {
+        if (roomList[roomID].players[i] != NULL)
+            roomList[roomID].players[i]->state = 8;
+    }
 
     sprintf(mes, "00|#|Final winner: %s|", roomList[roomID].players[winnerIndex]->name);
     sendChatAndNotify(roomID, mes);

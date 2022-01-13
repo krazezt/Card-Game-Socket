@@ -20,5 +20,7 @@ char* getResPlayer(int);
 // 2: Dang o man hinh room list.
 // 3. Dang o man hinh room, holding.
 // 4. Dang o man hinh room, readying.
-// 5. Dang o man hinh game, chua nhap diem cuoc.
-// 6. Dang o man hinh game, da nhap diem cuoc.
+// 5. Dang o man hinh game, chua nhan bai.
+// 6. Dang o man hinh game, da nhan bai, chua nhap diem cuoc.
+// 7. Dang o man hinh game, da nhap diem cuoc.
+// 8. End game.
