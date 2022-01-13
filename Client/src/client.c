@@ -53,7 +53,7 @@ void * reader(void* var){
         {
             printf("\nError!Cannot receive data from sever!\n");
             break;
-        }printf("%s\n",buff);
+        }//printf("%s\n",buff);
         commandCode = readCommandCode(buff);
         switch(commandCode){
             case 01:
@@ -217,7 +217,7 @@ void * sender(void* var){
                 	if(roomId<0 || roomId>9) printf("Unknown room ID!\n");
                 	}while(roomId<0 || roomId>9);
                 	sprintf (mes, "002|%d", roomId);
-                	printf("enter your nickname: "); scanf("%s",nickname); 
+                	printf("Enter your nickname: "); scanf("%s",nickname); 
                 	
                 	sprintf (mes, "%s|%s|", mes,nickname);
 
@@ -348,14 +348,14 @@ void * sender(void* var){
                  	check = 0;
                  	mes = NULL;
                  	mes = calloc(MAX, sizeof(char));
-                    	printf("Who will be allowed: ");
+                    	printf("Who will be promoted: ");
                     	scanf("%s",nickname); 
                     	sprintf (mes, "008|%s|", nickname);
                     	choice = 0;
                     	send(client_sock, mes, strlen(mes), 0);
                     	}else{
                     	 
-                    	 printf("enter your choice: ");
+                    	 printf(">");
 						}
 					free(mes);
 			}
@@ -384,7 +384,7 @@ void * sender(void* var){
                 	send(client_sock, mes_type, strlen(mes_type), 0);
                 	}else{
                     	 
-                    	 printf("enter your choice: ");
+                    	 printf(">");
 					}
 			}
 			else{ goto TOP;}
@@ -406,7 +406,7 @@ int main(int argc, char *argv[]){
     int oldScreen = ScreenNumber;
     if (argc != 2)
     {
-        printf("error, too many or too few arguments\n");
+        printf("Error, too many or too few arguments\n");
         printf("Correct format is /.client YourId\n");
         exit(1);
     }
