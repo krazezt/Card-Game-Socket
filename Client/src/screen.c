@@ -144,13 +144,13 @@ void gameScreen(GameInfo* players,int host, int you, int part){
     for(;part<6;part++) printf("|     |                  |         |         |      |      |\n");
     printf("+=====+==================+=========+=========+======+======+\n");
     if(you == host){
-    	printf("1.chat\n");
-    	printf("2.bet\n");
-    	printf("3.get card\n");
+    	printf("1.Chat\n");
+    	printf("2.Qet\n");
+    	printf("3.Get card\n");
 
     }else{
-    	printf("1.chat\n");
-	printf("2.bet\n");
+    	printf("1.Chat\n");
+	printf("2.Bet\n");
     }
     printf("----------------------------------------------------------\n");
 
@@ -183,8 +183,8 @@ void endGame(GameInfo* players,int host, int you, int part){
     for(;part<6;part++) printf("|     |                  |         |         |      |      |\n");
     printf("+=====+==================+=========+=======+========+======+\n");
 
-    	printf("1.chat\n");
-    	printf("2.quit\n");
+    	printf("1.Chat\n");
+    	printf("2.Quit\n");
 
     printf("----------------------------------------------------------\n");
 
