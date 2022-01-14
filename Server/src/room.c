@@ -65,6 +65,9 @@ int addPlayer(int roomID, Player* playerPtr) {
         if (i >= MAX_ROOM) return 0;
         if (roomList[i].id == roomID) {
             for (int j = 0; j < MAX_PLAYER_IN_ROOM; j++) {
+                if (roomList[i].players[j] != NULL)
+                    if (roomList[i].players[j]->state > 4) return 0;
+
                 if (roomList[i].players[j] == NULL) {
                     roomList[i].players[j] = playerPtr;
                     roomList[i].players[j]->roomID == roomID;
