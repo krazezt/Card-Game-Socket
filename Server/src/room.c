@@ -323,6 +323,8 @@ void initGame(int roomID) {
             }
         };
     }
+
+    roomList[roomID].isPlaying = 1;
 }
 
 int startGame(int curr_player_sd, int roomID) {
@@ -494,6 +496,8 @@ int endGame(int roomID, int winnerIndex) {
         if (roomList[roomID].players[i] != NULL)
             roomList[roomID].players[i]->state = 8;
     }
+
+    roomList[roomID].isPlaying = 0;
 
     sprintf(mes, "00|#|Final winner: %s|", roomList[roomID].players[winnerIndex]->name);
     sendChatAndNotify(roomID, mes);
